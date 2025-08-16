@@ -13,7 +13,7 @@ Select Summary is a browser extension that allows users to summarize text of any
 1. **Download or Clone** this extension folder to your computer.
 2. **Open Chrome** and go to `chrome://extensions/`.
 3. **Enable Developer Mode** (toggle in the top right).
-4. **Click "Load unpacked"** and select the `select-summary` folder.
+4. **Click "Load unpacked"** and select the `chrome-extension` folder.
 5. **Click** on the extension in the extension bar and follow the instructions.
 6. **Navigate** to any of the article or website with text (e.g., `News Articles`, `Reddit Posts`).
 7. **Highlight** any piece of text.

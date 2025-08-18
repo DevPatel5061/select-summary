@@ -29,6 +29,15 @@
       "128": "icon/icon.png"
     }
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+G",
+        "mac": "Alt+G"
+      },
+      "description": "Open the Select Summary popup"
+    }
+  },
   "icons": {
     "128": "icon/icon.png"
   },

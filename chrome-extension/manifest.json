@@ -1,7 +1,7 @@
 {
   "name": "Select Summary",
   "description": "Summarize selected text using Gemini AI — easy and all for free",
-  "version": "1.0.0",
+  "version": "1.0",
   "manifest_version": 3,
   "permissions": [
     "storage",

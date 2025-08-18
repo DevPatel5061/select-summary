@@ -35,7 +35,7 @@
         "default": "Alt+G",
         "mac": "Alt+G"
       },
-      "description": "Open the Select Summary popup"
+      "description": "Open the Select Summary popup in the current tab"
     }
   },
   "icons": {

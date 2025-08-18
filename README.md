@@ -3,11 +3,7 @@
 Select Summary is a browser extension that allows users to summarize text of any length from any website using Google Gemini to get the core and important information out of the text. 
 
 ## Features
-<<<<<<< HEAD
-- **Text Summarization**: Summary any text with Google Gemini and get a fast and accurate summary.
-=======
 - **Text Summarization**: Summary any text with Google Gemini 2.0 Flash and get a fast and accurate summary.
->>>>>>> 10fe9271b8f5e522c500d5c12e6f8f71911d1ebb
 - **History**: Check previous summarized text with timestamps.
 - **API Key Management**: Manage and change your API key.
 - **Clean & Responsive UI/UX**: Easy to view and use pop-up and summary card.
@@ -23,10 +19,7 @@ Select Summary is a browser extension that allows users to summarize text of any
 7. **Highlight** any piece of text.
 8. **Right click** `Summarize with Google Gemini`.
 9. **View** the summary in the bottom right.
-<<<<<<< HEAD
-=======
 
 ## Important Information
 - **Never share your API key**
 - **Your API key will give you 200 requests per day** *(`Ensure within a minute less than 10 requests are made`)*
->>>>>>> 10fe9271b8f5e522c500d5c12e6f8f71911d1ebb

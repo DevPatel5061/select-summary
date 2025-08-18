@@ -33,8 +33,7 @@
     "_execute_action": {
       "suggested_key": {
         "default": "Alt+G",
-        "mac": "Alt+G",
-        "chromeos": "Alt+G"
+        "mac": "Alt+G"
       },
       "description": "Open the Select Summary popup"
     }

@@ -20,6 +20,9 @@ Select Summary is a browser extension that allows users to summarize text of any
 8. **Right click** `Summarize with Google Gemini`.
 9. **View** the summary in the bottom right.
 
+## Preview
+![Select_Summary_GIF](https://github.com/user-attachments/assets/d2097ced-b680-4b07-a014-192808543494)
+
 ## Important Information
 - **Never share your API key**
 - **Your API key will give you 200 requests per day** *(`Ensure within a minute less than 10 requests are made`)*

@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 function showSummary(summary) {
-  const existing = document.getElementById("tldr-popup");
+  const existing = document.getElementById("tldr-card");
   if (existing) existing.remove();
 
   fetch(chrome.runtime.getURL("summary.html"))
@@ -30,12 +30,12 @@ function showSummary(summary) {
 
       document.body.appendChild(popup);
 
-      // Auto-hide after 10 seconds
+      // Auto-hide after 15 seconds
       const autoHideTimer = setTimeout(() => {
         if (popup && popup.parentNode) {
           popup.remove();
         }
-      }, 17500);
+      }, 15000);
 
       // Copy button functionality
       const copyBtn = popup.querySelector("#copy-btn");
@@ -52,10 +52,12 @@ function showSummary(summary) {
       });
 
       // Close button functionality
-      const closeBtn = popup.querySelector("#close-card");
-      closeBtn.addEventListener("click", () => {
-        if (popup && popup.parentNode) {
-          popup.remove();
+      document.addEventListener("click", function (e) {
+        if (e.target && e.target.id === "close-card") {
+          const popup = document.getElementById("tldr-card");
+          if (popup && popup.parentNode) {
+            popup.remove();
+          }
         }
       });
     })
@@ -65,7 +67,7 @@ function showSummary(summary) {
 }
 
 function showError(message) {
-  const existing = document.getElementById("tldr-popup");
+  const existing = document.getElementById("tldr-card");
   if (existing) existing.remove();
 
   fetch(chrome.runtime.getURL("summary.html"))
@@ -91,24 +93,24 @@ function showError(message) {
 
       document.body.appendChild(popup);
 
-      // Auto-hide error after 10 seconds
+      // Auto-hide error after 15 seconds
       const autoHideTimer = setTimeout(() => {
         if (popup && popup.parentNode) {
           popup.remove();
         }
-      }, 17500);
+      }, 15000);
 
       // Close button functionality for error popup
-      const closeBtn = popup.querySelector("#close-card");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
+      document.addEventListener("click", function (e) {
+        if (e.target && e.target.id === "close-card") {
+          const popup = document.getElementById("tldr-card");
           if (popup && popup.parentNode) {
             popup.remove();
           }
-        });
-      }
+        }
+      });
     })
-    .catch(error => {
-      console.error('Error loading error popup:', error);
+    .catch(error => { 
+      console.error('Error loading error popup:', error); 
     });
 }

@@ -17,7 +17,7 @@ Select Summary is a browser extension that allows users to summarize text of any
 5. **Click** on the extension in the extension bar or **Press** `Alt + G` or for MacOS `Option + G` and follow the instructions.
 7. **Navigate** to any of the article or website with text (e.g., `News Articles`, `Reddit Posts`).
 8. **Highlight** any piece of text.
-9. **Right click** `Summarize with Google Gemini`.
+9. **Right click** `Summarize with Google Gemini` or **Press** `Ctrl + Z` or for MacOS `Command + Z`.
 10. **View** the summary in the bottom right.
 
 ## Preview

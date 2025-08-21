@@ -4,7 +4,7 @@
 
 body {
   font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 525;
+  font-weight: 400;
   line-height: 1.75;
   margin: 0;
   padding: 16px;
@@ -15,28 +15,9 @@ body {
   height: auto;
 }
 
-h2 {
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 0;
-  font-size: 22px;
-  color: #191918;
-}
-
-h3 {
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 20px;
-  color: #191918;
-}
-
 h4 {
   font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   margin-top: 0;
   margin-bottom: 12px;
   font-size: 16px;
@@ -80,40 +61,46 @@ h4 {
   text-align: center;
   display: flex;
   flex-direction: column;
-  min-height: unset;    /* remove forced full height */
+  min-height: unset;
   justify-content: flex-start;
 }
 
-.api-setup h3 {
+.api-setup-title {
   margin-top: 0;
+  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  text-align: center;
+  color: #191918;
 }
 
-.api-instructions-card {
-  background-color: #f9f9f9;
-  border-radius: 0.5rem;
-  padding: 12px;
-  margin-top: 12px;
+.api-instruction-title {
+  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: left;
+  color: #0175DE;
+  font-weight: 600;
+  font-size: 20px;
+  margin: 12px, 0, 12px, 0;
+  cursor: pointer;
+}
+
+.api-instructions p{
   text-align: left;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
   color: #191918;
-  border: 1px solid #e0e0e0;
-  line-height: 1.25;
+  line-height: 1.2;
+  margin: 0, 0, 8px, 0;
 }
 
-.api-instructions-card a {
+.api-instructions a {
   color: #1a73e8;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 400;
 }
 
-.api-instructions-card a:hover {
+.api-instructions a:hover {
   text-decoration: underline;
-}
-
-.api-note {
-  margin-top: 16px; 
-  font-size: 10px;
 }
 
 #api-key-input {
@@ -124,7 +111,7 @@ h4 {
   background-color: #FFFFFF;
   color: #191918;
   font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   margin-bottom: 16px;
 }
 
@@ -133,6 +120,7 @@ h4 {
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
+  margin-top: -16px;
 }
 
 .api-input-container #api-key-input {
@@ -153,6 +141,9 @@ h4 {
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
+  width: 100%;
+  margin-top: -12px;
+  
 }
 
 .save-btn:hover {
@@ -182,11 +173,21 @@ h4 {
   height: 100%;
 }
 
+.popup-title {
+  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 24px;
+  color: #191918;
+}
+
 .modal-content {
   background-color: #ffffff;
   margin: 5% auto;
   padding: 0;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   width: 90%;
   max-width: 350px;
   max-height: 80vh;
@@ -224,8 +225,10 @@ h4 {
   top: 0;
 }
 
-#settings-title {
-  margin-top: 5px;
+.settings-title {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 400px;
 }
 
 .close-modal-btn {
@@ -257,7 +260,7 @@ h4 {
 
 .api-key-display label {
   display: block;
-  color: #d1d5db;
+  color: #b0b1b1;
   font-size: 14px;
   margin-bottom: 8px;
 }
@@ -384,10 +387,19 @@ h4 {
   background-color: #005BAA;
 }
 
-.reset-info p {
-  color: #9ca3af;
+.ai-info p {
+  color: #bababa;
+  font-weight: 400;
   font-size: 12px;
-  margin-top: 18px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.reset-info p {
+  color: #bababa;
+  font-weight: 400;
+  font-size: 12px;
+  margin-top: 12px;
   text-align: center;
 }
 
@@ -498,5 +510,23 @@ button {
 
 .clear-btn:hover {
   background-color: #E6F1FA;
-;
+}
+
+@keyframes smoothSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body > * {
+  animation: smoothSlideIn 0.3s ease-out;
+}
+
+.modal-content {
+  animation: smoothSlideIn 0.2s ease-out;
 }

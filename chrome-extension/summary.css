@@ -55,7 +55,6 @@
     padding: 8px 0;
 }
 
-/* Animate the buttons container */
 #buttons {
     display: flex;
     justify-content: flex-end;
@@ -91,20 +90,19 @@
     font-size: 12px;
     font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
 }
-
-/* Keyframes for animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* Fluid animation keyframes */
+@keyframes smoothSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+#tldr-card, #tldr-card > *,
+.modal-content {
+  animation: smoothSlideIn 0.2s ease-out forwards;
 }

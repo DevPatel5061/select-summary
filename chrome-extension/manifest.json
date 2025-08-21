@@ -1,13 +1,14 @@
 {
   "name": "Select Summary",
   "description": "Summarize selected text using Gemini AI — easy and all for free",
-  "version": "1.0",
+  "version": "2.0",
   "manifest_version": 3,
   "permissions": [
     "storage",
     "contextMenus",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "notifications"
   ],
   "background": {
     "service_worker": "background.js"
@@ -36,6 +37,13 @@
         "mac": "Alt+G"
       },
       "description": "Open the Select Summary popup in the current tab"
+    },
+    "summarize-selection": {
+      "suggested_key": {
+        "default": "Ctrl+Z",
+        "mac": "Command+Z"
+      },
+      "description": "Summarize selected text with Gemini AI"
     }
   },
   "icons": {

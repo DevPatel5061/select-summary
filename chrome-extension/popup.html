@@ -11,10 +11,10 @@
 
 <body>
   <div id="api-setup" class="api-setup">
-    <h3>🔑 Google API Key Setup Required</h3>
+    <h3 class="api-setup-title">🔑 Google API Key Setup</h3>
 
     <div class="api-input-container">
-      <input type="password" id="api-key-input" placeholder="API key goes here"/>
+      <input type="password" id="api-key-input" placeholder="API key goes here" />
 
       <button id="show-hide-setup-key" class="toggle-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -35,94 +35,96 @@
 
     <button id="save-api-key" class="save-btn">Save API Key</button>
 
-    <div class="api-instructions-card">
-      <h4>Instructions:</h4>
-      <p>• Make sure you're logged into a Google account</p>
-      <p>• Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">
-      aistudio.google.com/app/apikey</a></p>
-      <p>• Click "Create API Key"</p>
-      <p>• Copy the API Key</p>
-      <p>• Paste it above</p>
+    <div class="ai-info">
+      <p>This extension uses Gemini 2.5 Flash-Lite.</p>
     </div>
 
-    <p class="api-note">Your API key is stored locally and never shared.</p>
-  </div>
+    <details class="api-instructions">
+      <summary class="api-instruction-title">Setup Instructions</summary>
+        <p>1. Make sure you're logged into a Google account</p>
+        <p>2. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"> Google Studio AI</a></p>
+        <p>3. Click "Create API Key"</p>
+        <p>4. Copy the API Key</p>
+        <p>5. Paste it above</p>
+    </div>
+  </details>
 </body>
 
+<div id="main-content" class="main-content" style="display: none;">
+  <div class="header-row">
+    <h2 class="popup-title">🤖 Select Summary</h2>
 
-  <div id="main-content" class="main-content" style="display: none;">
-    <div class="header-row">
-      <h2>🤖 Select Summary</h2>
-
-      <button id="settings-btn" class="settings-btn">Settings</button>
-    </div>
-
-    <div id="summary-list">Summaries Failed to Load</div>
-
-    <div class="button-container">
-      <button class="clear-btn" id="clear-popup">Clear All</button>
-      <button class="close-btn" id="close-popup">Close</button>
-    </div>
+    <button id="settings-btn" class="settings-btn">Settings</button>
   </div>
 
-  <div id="settings-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="settings-title">⚙️ Settings</h3>
-        <button id="close-settings" class="close-modal-btn">&times;</button>
-      </div>
+  <div id="summary-list">Summaries Failed to Load</div>
 
-      <div class="settings-section">
-        <h4>API Key Management</h4>
+  <div class="button-container">
+    <button class="clear-btn" id="clear-popup">Clear All</button>
+    <button class="close-btn" id="close-popup">Close</button>
+  </div>
+</div>
 
-        <div class="api-key-display">
-          <label>Current API Key:</label>
+<div id="settings-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="settings-title">⚙️ Settings</h3>
+      <button id="close-settings" class="close-modal-btn">&times;</button>
+    </div>
 
-          <div class="api-key-container">
-            <input type="password" id="current-api-key" readonly />
+    <div class="settings-section">
+      <h4>API Key Management</h4>
 
-            <button id="show-hide-key" class="toggle-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                class="eye-icon">
-                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+    <div class="api-key-display">
+      <label>Current API Key:</label>
 
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                class="eye-off-icon" style="display: none;">
-                <path
-                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
-            </button>
-            
-          </div>
-        </div>
-        <div class="api-actions">
-          <button id="change-api-key" class="action-btn">Change API Key</button>
-          <button id="confirm-api-key" class="action-btn confirm-btn" style="display: none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20,6 9,17 4,12"></polyline>
-            </svg>
-          </button>
+      <div class="api-key-container">
+        <input type="password" id="current-api-key" readonly />
 
-          <button id="cancel-api-key" class="action-btn cancel-btn" style="display: none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+        <button id="show-hide-key" class="toggle-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            class="eye-icon">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
 
-          <button id="delete-api-key" class="delete-btn">Delete API Key</button>
-        </div>
-        <div class="reset-info">
-          <p>Your API key is stored locally and never shared.</p>
-          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            class="eye-off-icon" style="display: none;">
+            <path
+              d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        </button>
+
       </div>
     </div>
-  </div>
+    <div class="api-actions">
+      <button id="change-api-key" class="action-btn">Change API Key</button>
+      <button id="confirm-api-key" class="action-btn confirm-btn" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20,6 9,17 4,12"></polyline>
+        </svg>
+      </button>
 
-  <script src="popup.js"></script>
+      <button id="cancel-api-key" class="action-btn cancel-btn" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <button id="delete-api-key" class="delete-btn">Delete API Key</button>
+    </div>
+
+    <div class="reset-info">
+      <p>Your API key is stored locally and never shared.</p>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="popup.js"></script>
 
 </body>
 

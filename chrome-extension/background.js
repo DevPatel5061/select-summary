@@ -6,8 +6,9 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// --- Shared summarize logic ---
+// Function to handle summarization
 async function handleSummarize(selectionText, tab) {
+
   // Prevent injection on restricted pages
   if (!tab.url || tab.url.startsWith("chrome://") ||
     tab.url.startsWith("https://chrome.google.com/")) {
@@ -28,6 +29,7 @@ async function handleSummarize(selectionText, tab) {
   // Check if API key exists
   chrome.storage.local.get(['geminiApiKey'], async (result) => {
     if (!result.geminiApiKey) {
+
       // No API key set, inject content script and show error message
       try {
         await chrome.scripting.executeScript({
@@ -35,6 +37,7 @@ async function handleSummarize(selectionText, tab) {
           files: ['content.js']
         });
 
+        // Send message to content script to show error
         setTimeout(async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, {
@@ -53,10 +56,11 @@ async function handleSummarize(selectionText, tab) {
       return;
     }
 
+    // API key exists, proceed with summarization
     try {
       const summary = await summarizeWithGemini(selectionText, result.geminiApiKey);
 
-      // Store it in history
+      // Store it chrome.storage.local
       chrome.storage.local.get({ summaries: [] }, (data) => {
         const summaryWithTimestamp = {
           text: summary,
@@ -73,6 +77,7 @@ async function handleSummarize(selectionText, tab) {
           files: ['content.js']
         });
 
+        // Send the summary to the content script otherwise send error message
         setTimeout(async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, {
@@ -90,6 +95,7 @@ async function handleSummarize(selectionText, tab) {
       }
     } catch (error) {
       console.error('Error summarizing text:', error);
+
       // Inject content script and show error message
       try {
         await chrome.scripting.executeScript({
@@ -97,6 +103,7 @@ async function handleSummarize(selectionText, tab) {
           files: ['content.js']
         });
 
+        // Send error message to content script
         setTimeout(async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, {
@@ -116,7 +123,7 @@ async function handleSummarize(selectionText, tab) {
   });
 }
 
-// --- Keyboard shortcut handler ---
+// Keyboard shortcut handler
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "summarize-selection") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -140,14 +147,14 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-// --- Context menu handler ---
+// Context menu handler
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "summarizeWithGemini" && info.selectionText) {
     handleSummarize(info.selectionText, tab);
   }
 });
 
-// --- Gemini API call ---
+// Gemini API call
 async function summarizeWithGemini(text, apiKey) {
   const body = {
     model: "models/gemini-2.5-flash-lite",
@@ -160,6 +167,7 @@ async function summarizeWithGemini(text, apiKey) {
     }
   };
 
+  // Make the API request
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -168,10 +176,12 @@ async function summarizeWithGemini(text, apiKey) {
 
   const data = await res.json();
 
+  // Check for errors in the response
   if (!res.ok) {
     throw new Error(`API Error: ${data.error?.message || res.statusText}`);
   }
 
+  // Extract the summary from the response
   let summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No summary returned.";
   return summary;
 }

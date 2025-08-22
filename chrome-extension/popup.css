@@ -1,9 +1,10 @@
+/* General Styles */
 * {
   box-sizing: border-box;
+  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 400;
   line-height: 1.75;
   margin: 0;
@@ -16,7 +17,6 @@ body {
 }
 
 h4 {
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
   margin-top: 0;
   margin-bottom: 12px;
@@ -31,6 +31,7 @@ h4 {
   margin-bottom: 16px;
 }
 
+/* Settings Button Style */
 .settings-btn {
   background: none;
   border: none;
@@ -57,6 +58,7 @@ h4 {
   height: 20px;
 }
 
+/* API Setup Style */
 .api-setup {
   text-align: center;
   display: flex;
@@ -67,7 +69,6 @@ h4 {
 
 .api-setup-title {
   margin-top: 0;
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
   font-size: 24px;
   text-align: center;
@@ -75,7 +76,6 @@ h4 {
 }
 
 .api-instruction-title {
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
   text-align: left;
   color: #0175DE;
   font-weight: 600;
@@ -110,9 +110,17 @@ h4 {
   border-radius: 0.3125rem;
   background-color: #FFFFFF;
   color: #191918;
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 12px;
   margin-bottom: 16px;
+}
+
+#api-key-input::placeholder {
+  color: #969696;
+}
+
+.api-input-container #api-key-input {
+  margin-bottom: 0;
+  flex: 1;
 }
 
 .api-input-container {
@@ -123,15 +131,8 @@ h4 {
   margin-top: -16px;
 }
 
-.api-input-container #api-key-input {
-  margin-bottom: 0;
-  flex: 1;
-}
 
-#api-key-input::placeholder {
-  color: #969696;
-}
-
+/* Save Button Style */
 .save-btn {
   background-color: #0175DE;
   color: white;
@@ -150,6 +151,7 @@ h4 {
   background-color: #005BAA;
 }
 
+/* Change API Button Style */
 .change-api-btn {
   background-color: #6b7280;
   color: white;
@@ -164,6 +166,7 @@ h4 {
   background-color: #4b5563;
 }
 
+/* Popup Style */
 .modal {
   display: none;
   position: absolute;
@@ -173,8 +176,18 @@ h4 {
   height: 100%;
 }
 
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f2f2f2;
+  background-color: #ffffff;
+  position: sticky;
+  top: 0;
+}
+
 .popup-title {
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
   text-align: center;
   margin-top: 0;
@@ -196,6 +209,7 @@ h4 {
   overflow-x: hidden;
 }
 
+/* Custom Scrollbar Style */
 .modal-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -214,17 +228,125 @@ h4 {
   background: #a8a8a8;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f2f2f2;
-  background-color: #ffffff;
-  position: sticky;
-  top: 0;
+/* Summary List Style */
+#summary-list {
+  max-height: 450px;
+  overflow-y: auto;
 }
 
+.summary-card {
+  background-color: #F8F8F8;
+  border: #F4F4F4;
+  border-style: solid;
+  border-width: 1.5px;
+  border-radius: 0.5rem;
+  padding: 12px 14px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  transition: transform 0.15s ease;
+}
+
+.summary-text {
+  font-size: 14px;
+  color: #191918;
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+
+.summary-timestamp {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* General Button Style */
+.btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+button {
+  padding: 5px 10px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button-container {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.api-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Copy Button Style */
+.copy-btn {
+  background-color: #f8f8f8;
+  color: #191918;
+  margin-top: 2.5px;
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-btn:hover {
+  background-color: #F2F2F2;
+}
+
+/* Close Button Style */
+.close-btn {
+  background-color: #0175DE;
+  color: #ffffff;
+  width: 120px;
+  height: 36px;
+  margin-top: 0;
+  transition: all 0.2s ease;
+  background-size: 200% auto;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background-color: #005BAA;
+;
+}
+
+/* Clear Button Style */
+.clear-btn {
+  background-color: #f1f9fe;
+  color: #005BAA;
+  width: 120px;
+  height: 36px;
+  margin-top: 0;
+  transition: all 0.2s ease;
+  background-size: 200% auto;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-btn:hover {
+  background-color: #E6F1FA;
+}
+
+/* Settings Modal Style */
 .settings-title {
   margin-top: 10px;
   font-size: 18px;
@@ -314,12 +436,8 @@ h4 {
   height: 16px;
 }
 
-.api-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
+/* Change API Key Button Style*/
+.change-btn {
   flex: 1;
   padding: 8px 12px;
   background-color: #f1f9fe;
@@ -335,10 +453,11 @@ h4 {
   justify-content: center;
 }
 
-.action-btn:hover {
+.change-btn:hover {
   background-color: #E6F1FA;
 }
 
+/* Confirm API Change Button Style */
 .confirm-btn {
   background-color: #0175DE;
   border: none;
@@ -355,6 +474,7 @@ h4 {
   background-color: #005BAA;
 }
 
+/* Cancel API Change Button Style */
 .cancel-btn {
   background-color: #252525;
   color: #ffffff;
@@ -371,6 +491,7 @@ h4 {
   background-color: #191918;
 }
 
+/* Delete API Button Style */
 .delete-btn {
   flex: 1;
   padding: 8px 12px;
@@ -387,6 +508,7 @@ h4 {
   background-color: #005BAA;
 }
 
+/* Information Text at Bottom Style */
 .ai-info p {
   color: #bababa;
   font-weight: 400;
@@ -395,7 +517,7 @@ h4 {
   text-align: center;
 }
 
-.reset-info p {
+.setting-info p {
   color: #bababa;
   font-weight: 400;
   font-size: 12px;
@@ -403,115 +525,7 @@ h4 {
   text-align: center;
 }
 
-#summary-list {
-  max-height: 450px;
-  overflow-y: auto;
-}
-
-.summary-card {
-  background-color: #F8F8F8;
-  border: #F4F4F4;
-  border-style: solid;
-  border-width: 1.5px;
-  border-radius: 0.5rem;
-  padding: 12px 14px;
-  margin-top: 12px;
-  margin-bottom: 12px;
-  transition: transform 0.15s ease;
-}
-
-.summary-text {
-  font-size: 14px;
-  color: #191918;
-  margin-bottom: 10px;
-  white-space: pre-wrap;
-}
-
-.summary-timestamp {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-bottom: 8px;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.btn-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-button {
-  padding: 5px 10px;
-  font-family: system-ui, apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.button-container {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.copy-btn {
-  background-color: #f8f8f8;
-  color: #191918;
-  margin-top: 2.5px;
-  transition: all 0.2s ease;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.copy-btn:hover {
-  background-color: #F2F2F2;
-}
-
-.close-btn {
-  background-color: #0175DE;
-  color: #ffffff;
-  width: 120px;
-  height: 36px;
-  margin-top: 0;
-  transition: all 0.2s ease;
-  background-size: 200% auto;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background-color: #005BAA;
-;
-}
-
-.clear-btn {
-  background-color: #f1f9fe;
-  color: #005BAA;
-  width: 120px;
-  height: 36px;
-  margin-top: 0;
-  transition: all 0.2s ease;
-  background-size: 200% auto;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.clear-btn:hover {
-  background-color: #E6F1FA;
-}
-
+/* Animation for Summary Card */
 @keyframes smoothSlideIn {
   0% {
     opacity: 0;

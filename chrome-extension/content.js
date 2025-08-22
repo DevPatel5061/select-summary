@@ -6,6 +6,7 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
+// Show summary in the bottom right
 function showSummary(summary) {
   const existing = document.getElementById("tldr-card");
   if (existing) existing.remove();
@@ -66,6 +67,7 @@ function showSummary(summary) {
     });
 }
 
+// Show error message in the bottom right
 function showError(message) {
   const existing = document.getElementById("tldr-card");
   if (existing) existing.remove();

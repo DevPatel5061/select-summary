@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteApiKeyBtn = document.getElementById("delete-api-key");
   const clearPopupBtn = document.getElementById("clear-popup");
 
-  // State tracking
+  // API editing state tracking
   let isEditingApiKey = false;
 
   // Check if API key exists
@@ -25,11 +25,89 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Load summaries from storage
+  function loadSummaries() {
+    const listContainer = document.getElementById("summary-list");
+
+    chrome.storage.local.get({ summaries: [] }, (data) => {
+      const summaries = data.summaries;
+      listContainer.innerHTML = "";
+
+      if (summaries.length === 0) {
+        listContainer.innerHTML = "<p style='color: #d1d5db; text-align: center;'>No summaries yet.</p>";
+        return;
+      }
+
+      summaries.forEach((summaryData) => {
+        const card = document.createElement("div");
+        card.className = "summary-card";
+
+        // Create timestamp element
+        const timestampElement = document.createElement("div");
+        timestampElement.className = "summary-timestamp";
+        
+        // Handle both new format (with timestamp) and old format (just text)
+        if (summaryData.timestamp) {
+          timestampElement.textContent = formatTimeAgo(summaryData.timestamp);
+        } else {
+          // For old summaries without timestamp, show "Unknown time"
+          timestampElement.textContent = "Unknown time";
+        }
+
+        const summaryText = document.createElement("div");
+        summaryText.className = "summary-text";
+        summaryText.innerText = summaryData.text || summaryData; // Handle both new and old format
+
+        const buttonRow = document.createElement("div");
+        buttonRow.className = "btn-row";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "copy-btn";
+        
+        const copyIcon = document.createElement("svg");
+        copyIcon.setAttribute("width", "14");
+        copyIcon.setAttribute("height", "14");
+        copyIcon.setAttribute("viewBox", "0 0 24 24");
+        copyIcon.setAttribute("fill", "none");
+        copyIcon.setAttribute("stroke", "currentColor");
+        copyIcon.setAttribute("stroke-width", "2");
+        copyIcon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
+        
+        const copyText = document.createElement("span");
+        copyText.innerText = "Copy";
+        
+        copyBtn.appendChild(copyIcon);
+        copyBtn.appendChild(copyText);
+        
+        copyBtn.addEventListener("click", () => {
+          const textToCopy = summaryData.text || summaryData;
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            copyText.innerText = "Copied!";
+            setTimeout(() => (copyText.innerText = "Copy"), 1500);
+          }).catch(err => {
+            console.error('Failed to copy text:', err);
+            // Fallback: show a message that copy failed
+            copyText.innerText = "Failed";
+            setTimeout(() => (copyText.innerText = "Copy"), 1500);
+          });
+        });
+
+        buttonRow.appendChild(copyBtn);
+        card.appendChild(timestampElement);
+        card.appendChild(summaryText);
+        card.appendChild(buttonRow);
+        listContainer.appendChild(card);
+      });
+    });
+  }
+
+  // Show API setup modal
   function showApiSetup() {
     apiSetup.style.display = "block";
     mainContent.style.display = "none";
   }
 
+  // Show main content
   function showMainContent() {
     apiSetup.style.display = "none";
     mainContent.style.display = "block";
@@ -54,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
         apiKeyInput.value = "";
       });
     } else {
+
       // Show error for invalid API key
       apiKeyInput.style.borderColor = "#ef4444";
       setTimeout(() => {
@@ -62,33 +141,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Settings modal
-  settingsBtn.addEventListener("click", () => {
-    openSettingsModal();
-  });
-
-  closeSettingsBtn.addEventListener("click", () => {
-    closeSettingsModal();
-  });
-
-  // Close modal when clicking outside
-  window.addEventListener("click", (event) => {
-    if (event.target === settingsModal) {
-      closeSettingsModal();
-    }
-  });
-
+  // Open settings modal
   function openSettingsModal() {
     settingsModal.style.display = "block";
     loadSettingsData();
   }
 
+  // Close settings modal
   function closeSettingsModal() {
     settingsModal.style.display = "none";
     resetSettingsModalState();
   }
 
+  // Reset settings modal state
   function resetSettingsModalState() {
+    
     // Reset editing state
     isEditingApiKey = false;
     
@@ -141,6 +208,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Open settings modal
+  settingsBtn.addEventListener("click", () => {
+    openSettingsModal();
+  });
+
+  // Close settings modal
+  closeSettingsBtn.addEventListener("click", () => {
+    closeSettingsModal();
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener("click", (event) => {
+    if (event.target === settingsModal) {
+      closeSettingsModal();
+    }
+  });
+
   // Show/Hide API key
   showHideKeyBtn.addEventListener("click", () => {
     // Don't allow toggling during editing
@@ -153,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const eyeIcon = showHideKeyBtn.querySelector('.eye-icon');
         const eyeOffIcon = showHideKeyBtn.querySelector('.eye-off-icon');
         
+        // Toggle visibility of the API key
         if (currentApiKeyInput.type === "password") {
           currentApiKeyInput.value = result.geminiApiKey;
           currentApiKeyInput.type = "text";
@@ -253,6 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
         checkmarkBtn.style.backgroundColor = "#005BAA";
         
         setTimeout(() => {
+          
           // Reset to readonly state
           currentApiKeyInput.setAttribute('readonly', true);
           
@@ -316,81 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  function loadSummaries() {
-    const listContainer = document.getElementById("summary-list");
-
-    chrome.storage.local.get({ summaries: [] }, (data) => {
-      const summaries = data.summaries;
-      listContainer.innerHTML = "";
-
-      if (summaries.length === 0) {
-        listContainer.innerHTML = "<p style='color: #d1d5db; text-align: center;'>No summaries yet.</p>";
-        return;
-      }
-
-      summaries.forEach((summaryData) => {
-        const card = document.createElement("div");
-        card.className = "summary-card";
-
-        // Create timestamp element
-        const timestampElement = document.createElement("div");
-        timestampElement.className = "summary-timestamp";
-        
-        // Handle both new format (with timestamp) and old format (just text)
-        if (summaryData.timestamp) {
-          timestampElement.textContent = formatTimeAgo(summaryData.timestamp);
-        } else {
-          // For old summaries without timestamp, show "Unknown time"
-          timestampElement.textContent = "Unknown time";
-        }
-
-        const summaryText = document.createElement("div");
-        summaryText.className = "summary-text";
-        summaryText.innerText = summaryData.text || summaryData; // Handle both new and old format
-
-        const buttonRow = document.createElement("div");
-        buttonRow.className = "btn-row";
-
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "copy-btn";
-        
-        const copyIcon = document.createElement("svg");
-        copyIcon.setAttribute("width", "14");
-        copyIcon.setAttribute("height", "14");
-        copyIcon.setAttribute("viewBox", "0 0 24 24");
-        copyIcon.setAttribute("fill", "none");
-        copyIcon.setAttribute("stroke", "currentColor");
-        copyIcon.setAttribute("stroke-width", "2");
-        copyIcon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
-        
-        const copyText = document.createElement("span");
-        copyText.innerText = "Copy";
-        
-        copyBtn.appendChild(copyIcon);
-        copyBtn.appendChild(copyText);
-        
-        copyBtn.addEventListener("click", () => {
-          const textToCopy = summaryData.text || summaryData;
-          navigator.clipboard.writeText(textToCopy).then(() => {
-            copyText.innerText = "Copied!";
-            setTimeout(() => (copyText.innerText = "Copy"), 1500);
-          }).catch(err => {
-            console.error('Failed to copy text:', err);
-            // Fallback: show a message that copy failed
-            copyText.innerText = "Failed";
-            setTimeout(() => (copyText.innerText = "Copy"), 1500);
-          });
-        });
-
-        buttonRow.appendChild(copyBtn);
-        card.appendChild(timestampElement);
-        card.appendChild(summaryText);
-        card.appendChild(buttonRow);
-        listContainer.appendChild(card);
-      });
-    });
-  }
-
+  // Format timestamp on summaries
   function formatTimeAgo(timestamp) {
     if (!timestamp) return "";
     
@@ -413,6 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Give timestamps on old summaries
   function migrateOldSummaries() {
     chrome.storage.local.get({ summaries: [] }, (data) => {
       const summaries = data.summaries;
@@ -428,6 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (needsMigration) {
         const migratedSummaries = summaries.map(summary => {
           if (typeof summary === 'string') {
+
             // Convert old string format to new object format
             return {
               text: summary,

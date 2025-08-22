@@ -7,8 +7,7 @@
     "storage",
     "contextMenus",
     "scripting",
-    "activeTab",
-    "notifications"
+    "activeTab"
   ],
   "background": {
     "service_worker": "background.js"
@@ -43,7 +42,7 @@
         "default": "Ctrl+Z",
         "mac": "Command+Z"
       },
-      "description": "Summarize selected text with Gemini AI"
+      "description": "Summarize selected text with AI"
     }
   },
   "icons": {

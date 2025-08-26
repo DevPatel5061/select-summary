@@ -9,15 +9,18 @@ Select Summary is a browser extension that allows users to summarize text of any
 - **Clean & Responsive UI/UX**: Easy to view and use pop-up and summary card.
 - **Secure**: Stores API key in `chrome.storage.local`.
 
-## How to Use
+## How to Download from Chrome Web Store
+1. **Press** `Add to Chrome` from the [Chrome Web Store.](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd?hl=en&authuser=0)
+
+## How to Download from Github
 1. **Download or Clone** this extension folder to your computer.
 2. **Open Chrome** and go to `chrome://extensions/`.
 3. **Enable Developer Mode** (toggle in the top right).
 4. **Click "Load unpacked"** and select the `chrome-extension` folder.
-5. **Click** on the extension in the extension bar or **Press** `Alt + G` or for MacOS `Option + G` and follow the instructions.
+5. **Click** on the extension in the extension bar or **Press** `Alt/Option + G` and follow the instructions.
 7. **Navigate** to any of the article or website with text (e.g., `News Articles`, `Reddit Posts`).
 8. **Highlight** any piece of text.
-9. **Right click** `Summarize with Google Gemini` or **Press** `Ctrl + Z` or for MacOS `Command + Z`.
+9. **Right click** `Summarize with Google Gemini` or **Press** `Ctrl/Command + Z`.
 10. **View** the summary in the bottom right.
 
 ## Preview
@@ -32,5 +35,5 @@ Select Summary is a browser extension that allows users to summarize text of any
 - **Bug Fixes**: Fixed a closing button issue, tweaked Gemini's instruction for better summaries and more.
 
 ## Important Information
-- **Never share your API key**
-- **Your API key will give you 1000 requests per day** *(`Ensure within a minute less than 15 requests are made`)*
+- **Never share your API key**.
+- **Your API key will give you 1000 requests per day**. *(`Ensure within a minute less than 15 requests are made`)*

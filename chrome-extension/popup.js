@@ -1,495 +1,325 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const apiSetup = document.getElementById("api-setup");
-  const mainContent = document.getElementById("main-content");
-  const apiKeyInput = document.getElementById("api-key-input");
-  const saveApiKeyBtn = document.getElementById("save-api-key");
-  const settingsBtn = document.getElementById("settings-btn");
-  const settingsModal = document.getElementById("settings-modal");
-  const closeSettingsBtn = document.getElementById("close-settings");
-  const currentApiKeyInput = document.getElementById("current-api-key");
-  const showHideKeyBtn = document.getElementById("show-hide-key");
-  const changeApiKeyBtn = document.getElementById("change-api-key");
-  const deleteApiKeyBtn = document.getElementById("delete-api-key");
-  const clearPopupBtn = document.getElementById("clear-popup");
+import { SAMPLE_TEXT, activityStats, dayKey, shiftDay } from './core.js';
+import { decorateButtons, icon } from './icons.js';
 
-  // API editing state tracking
-  let isEditingApiKey = false;
+const $ = selector => document.querySelector(selector);
+let state;
+let currentView = 'home';
+let currentNotice;
+let connectingUI = false;
+let successSample = null;
+let setupRenderedStep = null;
+let refreshSerial = 0;
+let toastTimer;
+let lastTotal;
+let dayTimer;
+let renderedDay;
 
-  // Check if API key exists
-  chrome.storage.local.get(['geminiApiKey'], (result) => {
-    if (result.geminiApiKey) {
-      showMainContent();
-      migrateOldSummaries(); 
-    } else {
-      showApiSetup();
-    }
+async function request(type, fields = {}) {
+  let result;
+  try { result = await chrome.runtime.sendMessage({ type, ...fields }); }
+  catch { throw new Error('The extension could not connect. Reload it from your browser’s extension settings and try again.'); }
+  if (!result?.ok) throw new Error(result?.error?.message || 'Something did not load. Please reopen the extension and try again.');
+  return result;
+}
+
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function toast(message) {
+  clearTimeout(toastTimer);
+  $('#toast').textContent = message;
+  $('#toast').hidden = false;
+  toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 3500);
+}
+
+function showProblem(error) {
+  $('#notice-title').textContent = 'A little help needed';
+  $('#notice-message').textContent = error.message;
+  $('#notice').hidden = false;
+}
+
+function on(selector, event, handler) {
+  $(selector).addEventListener(event, async e => {
+    try { await handler(e); } catch (error) { showProblem(error); }
   });
+}
 
-  // Load summaries from storage
-  function loadSummaries() {
-    const listContainer = document.getElementById("summary-list");
+function navigate(view, focus = true) {
+  currentView = ['home', 'history', 'settings'].includes(view) ? view : 'home';
+  for (const id of ['home', 'history', 'settings']) $(`#${id}`).hidden = id !== currentView;
+  $('#onboarding').hidden = true;
+  document.querySelectorAll('[data-view]').forEach(button => {
+    if (button.dataset.view === currentView) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  if (focus) {
+    const heading = $(`#${currentView} h1`);
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }
+  if (currentView !== 'settings') {
+    $('#replacement-form').replaceChildren();
+    $('#replacement-form').hidden = true;
+    $('#replace-key').hidden = false;
+  }
+}
 
-    chrome.storage.local.get({ summaries: [] }, (data) => {
-      const summaries = data.summaries;
-      listContainer.innerHTML = "";
+function timeLabel(seconds) {
+  if (seconds < 60) return `${Math.floor(seconds)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  return `${(seconds / 3600).toFixed(1)}h`;
+}
 
-      if (summaries.length === 0) {
-        listContainer.innerHTML = "<p style='color: #d1d5db; text-align: center;'>No summaries yet.</p>";
-        return;
-      }
-
-      summaries.forEach((summaryData) => {
-        const card = document.createElement("div");
-        card.className = "summary-card";
-
-        // Create timestamp element
-        const timestampElement = document.createElement("div");
-        timestampElement.className = "summary-timestamp";
-        
-        // Handle both new format (with timestamp) and old format (just text)
-        if (summaryData.timestamp) {
-          timestampElement.textContent = formatTimeAgo(summaryData.timestamp);
-        } else {
-          // For old summaries without timestamp, show "Unknown time"
-          timestampElement.textContent = "Unknown time";
-        }
-
-        const summaryText = document.createElement("div");
-        summaryText.className = "summary-text";
-        summaryText.innerText = summaryData.text || summaryData; // Handle both new and old format
-
-        const buttonRow = document.createElement("div");
-        buttonRow.className = "btn-row";
-
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "copy-btn";
-        
-        const copyIcon = document.createElement("svg");
-        copyIcon.setAttribute("width", "14");
-        copyIcon.setAttribute("height", "14");
-        copyIcon.setAttribute("viewBox", "0 0 24 24");
-        copyIcon.setAttribute("fill", "none");
-        copyIcon.setAttribute("stroke", "currentColor");
-        copyIcon.setAttribute("stroke-width", "2");
-        copyIcon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
-        
-        const copyText = document.createElement("span");
-        copyText.innerText = "Copy";
-        
-        copyBtn.appendChild(copyIcon);
-        copyBtn.appendChild(copyText);
-        
-        copyBtn.addEventListener("click", () => {
-          const textToCopy = summaryData.text || summaryData;
-          navigator.clipboard.writeText(textToCopy).then(() => {
-            copyText.innerText = "Copied!";
-            setTimeout(() => (copyText.innerText = "Copy"), 1500);
-          }).catch(err => {
-            console.error('Failed to copy text:', err);
-            // Fallback: show a message that copy failed
-            copyText.innerText = "Failed";
-            setTimeout(() => (copyText.innerText = "Copy"), 1500);
-          });
-        });
-
-        buttonRow.appendChild(copyBtn);
-        card.appendChild(timestampElement);
-        card.appendChild(summaryText);
-        card.appendChild(buttonRow);
-        listContainer.appendChild(card);
-      });
+function renderHeatmap() {
+  if (!state) return;
+  const weeks = window.innerWidth >= 800 ? 52 : 13;
+  $('#activity-range').textContent = `Last ${weeks} weeks`;
+  const now = new Date();
+  const today = dayKey(now);
+  const sunday = shiftDay(now, -now.getDay());
+  const start = shiftDay(sunday, -(weeks - 1) * 7);
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < weeks * 7; index++) {
+    const date = shiftDay(start, index);
+    const day = dayKey(date);
+    const count = state.activity[day]?.count || 0;
+    const label = `${date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}: ${count} ${count === 1 ? 'summary' : 'summaries'}`;
+    const cell = element('button');
+    cell.dataset.level = String(Math.min(4, count));
+    cell.setAttribute('aria-label', label);
+    cell.title = label;
+    cell.tabIndex = day === today ? 0 : -1;
+    if (day === today) cell.dataset.today = '';
+    if (day > today) { cell.dataset.future = ''; cell.disabled = true; }
+    cell.addEventListener('focus', () => { $('#day-detail').textContent = label; });
+    cell.addEventListener('click', () => { $('#day-detail').textContent = label; });
+    cell.addEventListener('keydown', event => {
+      const offset = { ArrowRight: 7, ArrowLeft: -7, ArrowDown: 1, ArrowUp: -1 }[event.key];
+      if (!offset) return;
+      event.preventDefault();
+      const target = $('#heatmap').children[index + offset];
+      if (target && !target.disabled) { cell.tabIndex = -1; target.tabIndex = 0; target.focus(); }
     });
+    fragment.append(cell);
   }
+  $('#heatmap').replaceChildren(fragment);
+}
 
-  // Show API setup modal
-  function showApiSetup() {
-    apiSetup.style.display = "block";
-    mainContent.style.display = "none";
+function renderSummary(item) {
+  const card = element('article', 'summary-card');
+  const meta = element('div', 'summary-meta');
+  const date = item.timestamp ? new Date(item.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Date unavailable';
+  meta.append(element('span', '', date), element('span', '', `${item.summaryWords} words`));
+  const text = element('p', 'summary-text', item.text);
+  const actions = element('div', 'summary-actions');
+  const button = element('button', '', 'Copy summary');
+  button.prepend(icon('copy'));
+  button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(item.text); toast('Copied. Ready for your next idea.'); }
+    catch { toast('Copy was blocked. Select the summary text and copy it manually.'); }
+  });
+  actions.append(button);
+  card.append(meta, text, actions);
+  return card;
+}
+
+function renderDashboard() {
+  renderedDay = dayKey();
+  const stats = activityStats(state.activity);
+  $('#stat-total').textContent = stats.total.toLocaleString();
+  $('#stat-today').textContent = `${stats.today} today`;
+  $('#stat-time').textContent = timeLabel(stats.secondsSaved);
+  $('#stat-streak').replaceChildren(document.createTextNode(String(stats.currentStreak)), element('span', '', stats.currentStreak === 1 ? ' day' : ' days'));
+  $('#stat-best-streak').textContent = `Best: ${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`;
+  $('#stat-best').textContent = String(stats.bestDay);
+  $('#activity-message').textContent = stats.total ? `${stats.total} moments of clarity. Keep going.` : 'Your next highlight starts something.';
+  if (lastTotal !== undefined && stats.total > lastTotal && [1, 5, 10, 25, 50, 100].includes(stats.total)) {
+    toast(`${stats.total} summaries. Look at you go.`);
+    $('.activity-panel').classList.remove('celebrate');
+    requestAnimationFrame(() => $('.activity-panel').classList.add('celebrate'));
   }
+  lastTotal = stats.total;
+  renderHeatmap();
+  $('#history-count').textContent = String(state.history.length);
+  $('#clear-history').disabled = state.history.length === 0;
+  const list = $('#summary-list');
+  if (!state.history.length) {
+    const empty = element('div', 'empty');
+    empty.append(element('h2', '', 'Your next idea starts here.'), element('p', '', 'Highlight text on a webpage, right-click, and choose “Summarize selection.” Your short versions will appear here.'));
+    list.replaceChildren(empty);
+  } else list.replaceChildren(...state.history.map(renderSummary));
+  $('#latest-area').hidden = !state.history.length;
+  $('#latest-summary').replaceChildren(...state.history.slice(0, 1).map(renderSummary));
+  $('#key-status').textContent = `Key ending in ${state.keySuffix} · ${state.keyConfigured ? 'Connected' : 'Not connected'}`;
+  $('#upgrade-intro').hidden = state.introSeen;
+}
 
-  // Show main content
-  function showMainContent() {
-    apiSetup.style.display = "none";
-    mainContent.style.display = "block";
-    loadSummaries();
+const privacyHTML = '<div class="privacy-note">Selected text and a test sample are sent directly to Google. Free-tier inputs and responses may be used for product improvement and human review. Avoid sensitive text. For no API charges, use a project without billing enabled; we cannot verify its billing status. <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">Google’s terms</a> apply.</div>';
 
-    // Reset settings modal state when main content is shown
-    resetSettingsModalState();
+function createKeyForm(container, replacement = false) {
+  // This template contains only fixed, bundled copy. User and API text use textContent.
+  container.innerHTML = privacyHTML + '<form class="key-form"><label for="new-key">Your Gemini API key</label><div class="input-row"><input id="new-key" type="password" placeholder="Paste your API key" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="256" required><button type="button" class="icon-button" data-icon="eye" aria-label="Show entered key" aria-pressed="false"></button></div><label class="consent"><input type="checkbox" required><span>I understand this connects to Google and that my project’s data terms, limits, and possible API charges apply.</span></label><p class="form-status" role="status"></p><button type="submit" class="primary" data-icon="arrow">Test and connect</button></form>';
+  if (replacement) {
+    const cancel = element('button', 'text-button', 'Cancel replacement');
+    cancel.addEventListener('click', () => { container.replaceChildren(); container.hidden = true; $('#replace-key').hidden = false; $('#replace-key').focus(); });
+    container.append(cancel);
   }
-
-  // Save API key
-  saveApiKeyBtn.addEventListener("click", () => {
-    const apiKey = apiKeyInput.value.trim();
-    if (apiKey && apiKey.length > 10) { 
-      
-      // Store API key securely in chrome.storage.local
-      chrome.storage.local.set({ geminiApiKey: apiKey }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('Error saving API key:', chrome.runtime.lastError);
-          return;
-        }
-        showMainContent();
-        apiKeyInput.value = "";
-      });
-    } else {
-
-      // Show error for invalid API key
-      apiKeyInput.style.borderColor = "#ef4444";
-      setTimeout(() => {
-        apiKeyInput.style.borderColor = "#EBEBEB";
-      }, 2000);
+  decorateButtons(container);
+  const input = container.querySelector('input[type=password]');
+  const reveal = container.querySelector('button[type=button]');
+  reveal.addEventListener('click', () => {
+    const visible = input.type === 'password';
+    input.type = visible ? 'text' : 'password';
+    reveal.setAttribute('aria-label', visible ? 'Hide entered key' : 'Show entered key');
+    reveal.setAttribute('aria-pressed', String(visible));
+  });
+  container.querySelector('form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (connectingUI) return;
+    const consent = container.querySelector('input[type=checkbox]');
+    const status = container.querySelector('.form-status');
+    const submit = container.querySelector('button[type=submit]');
+    connectingUI = true;
+    submit.disabled = true;
+    input.readOnly = true;
+    status.textContent = 'Testing a tiny sample with Gemini. This may take a moment…';
+    try {
+      const result = await request('CONNECT_KEY', { key: input.value, consent: consent.checked });
+      input.value = '';
+      const refreshed = await request('GET_STATE');
+      state = refreshed.state;
+      successSample = result.sample;
+      setupRenderedStep = null;
+      $('#navigation').hidden = true;
+      for (const id of ['home', 'history', 'settings']) $(`#${id}`).hidden = true;
+      container.replaceChildren();
+      renderOnboarding();
+    } catch (error) {
+      status.textContent = error.message;
+      status.setAttribute('role', 'alert');
+      input.focus();
+    } finally {
+      connectingUI = false;
+      submit.disabled = false;
+      input.readOnly = false;
     }
   });
+}
 
-  // Open settings modal
-  function openSettingsModal() {
-    settingsModal.style.display = "block";
-    loadSettingsData();
+async function setupStep(step) {
+  await request('SET_ONBOARDING', { step });
+  state.onboardingStep = step;
+  setupRenderedStep = null;
+  renderOnboarding();
+}
+
+function renderOnboarding() {
+  const container = $('#onboarding');
+  const step = successSample ? 3 : state.onboardingStep;
+  container.hidden = false;
+  if (setupRenderedStep === step) return;
+  setupRenderedStep = step;
+  container.replaceChildren();
+  const progress = element('div', 'setup-progress');
+  progress.setAttribute('aria-label', `Setup step ${Math.min(step + 1, 3)} of 3`);
+  for (let index = 0; index < 3; index++) progress.append(element('span', index <= step ? 'active' : ''));
+  container.append(progress);
+  if (step === 0) {
+    container.insertAdjacentHTML('beforeend', '<p class="eyebrow">YOUR NEXT GOOD IDEA, FASTER</p><h1 class="setup-heading" id="setup-title">Big ideas.<br><span>Small summaries.</span></h1><p class="setup-subtitle">Turn the text you highlight into the part you actually need. A little less reading. A lot more clarity.</p><div class="demo"><span class="demo-label">A quick preview · no API request</span><p class="demo-source">Urban gardens <mark>grow fresh food, bring neighbors together, and support local wildlife</mark>. They need water and shared care to thrive.</p><button id="preview-demo" class="secondary" data-icon="arrow">Try the preview</button><div id="demo-result" class="demo-summary" hidden><span class="demo-label">The short version</span><p>Urban gardens strengthen communities and wildlife while growing food, with water and shared care essential to success.</p></div></div><button class="primary" id="start-setup" data-icon="arrow">Make room for clarity</button><div class="setup-benefits"><span>Free extension</span><span>No extension tracking</span><span>Your own Gemini key</span></div>');
+    on('#start-setup', 'click', () => setupStep(1));
+    on('#preview-demo', 'click', () => { $('#demo-result').hidden = false; $('#demo-result').classList.add('celebrate'); $('#preview-demo').hidden = true; });
+  } else if (step === 1) {
+    container.insertAdjacentHTML('beforeend', '<p class="eyebrow">ONE KEY. A LITTLE POSSIBILITY.</p><h1 class="setup-heading" id="setup-title">Let’s get you<br><span>connected.</span></h1><p class="setup-subtitle">Bring your own Gemini key. It takes just a few steps.</p><ol class="instructions"><li><div><strong>Open Google AI Studio</strong><span class="muted">Sign in with your Google account. You may need to accept Google’s terms.</span></div></li><li><div><strong>Create or select a project</strong><span class="muted">Use a project without billing enabled to avoid API charges. Free-tier access and regional availability vary.</span></div></li><li><div><strong>Create and copy your API key</strong><span class="muted">Use a key restricted to the Gemini API. Return here to paste it and test a sample.</span></div></li></ol><a class="studio-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Open Google AI Studio</a><p class="small muted">This screen remembers your progress if the popup closes.</p><div class="setup-actions"><button class="secondary" id="setup-back">Back</button><button class="primary" id="have-key" data-icon="arrow">I have my key</button></div>');
+    on('#setup-back', 'click', () => setupStep(0));
+    on('#have-key', 'click', () => setupStep(2));
+  } else if (step === 2) {
+    container.insertAdjacentHTML('beforeend', '<p class="eyebrow">THE LAST LITTLE STEP</p><h1 class="setup-heading" id="setup-title">A key to<br><span>clearer reading.</span></h1><p class="setup-subtitle">We’ll summarize a harmless sample to check your connection. Your key is saved only when the test works.</p><div id="setup-key-form"></div><button class="text-button" id="setup-back">Back to key instructions</button>');
+    createKeyForm($('#setup-key-form'));
+    on('#setup-back', 'click', () => setupStep(1));
+  } else {
+    container.insertAdjacentHTML('beforeend', '<p class="eyebrow">CONNECTION MADE</p><h1 class="setup-heading success-heading" id="setup-title">You’re all set.<br>Go find an idea.</h1><p class="setup-subtitle">Your key works. Here’s your first little moment of clarity.</p><div class="demo success-panel celebrate"><span class="demo-label">The sample we sent</span><p id="sample-source" class="demo-source"></p><div class="demo-summary"><span class="demo-label">Gemini’s short version</span><p id="sample-result"></p></div></div><p class="small muted">This test does not count toward your activity or history.</p><button class="primary" id="finish-setup" data-icon="arrow">Meet your dashboard</button>');
+    $('#sample-source').textContent = SAMPLE_TEXT;
+    $('#sample-result').textContent = successSample;
+    on('#finish-setup', 'click', () => { successSample = null; renderDashboard(); $('#navigation').hidden = false; navigate('home'); });
   }
+  decorateButtons(container);
+  const heading = $('#setup-title');
+  heading.tabIndex = -1;
+  heading.focus({ preventScroll: true });
+  window.scrollTo(0, 0);
+}
 
-  // Close settings modal
-  function closeSettingsModal() {
-    settingsModal.style.display = "none";
-    resetSettingsModalState();
+async function refresh() {
+  const serial = ++refreshSerial;
+  const response = await request('GET_STATE');
+  if (serial !== refreshSerial || connectingUI) return;
+  state = response.state;
+  currentNotice = response.notice;
+  $('#boot').hidden = true;
+  $('#notice').hidden = !currentNotice || currentNotice.level === 'success';
+  if (currentNotice) {
+    $('#notice-title').textContent = currentNotice.title;
+    $('#notice-message').textContent = currentNotice.message;
   }
-
-  // Reset settings modal state
-  function resetSettingsModalState() {
-    
-    // Reset editing state
-    isEditingApiKey = false;
-    
-    // Reset API key input to readonly and masked state
-    currentApiKeyInput.setAttribute('readonly', true);
-    currentApiKeyInput.type = "password";
-    
-    // Reset to masked display
-    chrome.storage.local.get(['geminiApiKey'], (result) => {
-      if (result.geminiApiKey) {
-        const maskedKey = result.geminiApiKey.substring(0, 8) + "..." + result.geminiApiKey.substring(result.geminiApiKey.length - 4);
-        currentApiKeyInput.value = maskedKey;
-      }
-    });
-    
-    // Hide confirm and cancel buttons, show change button
-    const checkmarkBtn = document.getElementById("confirm-api-key");
-    const cancelBtn = document.getElementById("cancel-api-key");
-    if (checkmarkBtn) {
-      checkmarkBtn.style.display = "none";
-    }
-    if (cancelBtn) {
-      cancelBtn.style.display = "none";
-    }
-    changeApiKeyBtn.style.display = "inline-flex";
-    
-    // Reset eye icon state
-    const eyeIcon = showHideKeyBtn.querySelector('.eye-icon');
-    const eyeOffIcon = showHideKeyBtn.querySelector('.eye-off-icon');
-    if (eyeIcon && eyeOffIcon) {
-      eyeIcon.style.display = "block";
-      eyeOffIcon.style.display = "none";
-    }
-    
-    // Re-enable the eye icon
-    showHideKeyBtn.style.opacity = "1";
-    showHideKeyBtn.style.pointerEvents = "auto";
+  if (!state.keyConfigured || successSample) {
+    $('#navigation').hidden = true;
+    for (const id of ['home', 'history', 'settings']) $(`#${id}`).hidden = true;
+    renderOnboarding();
+  } else {
+    setupRenderedStep = null;
+    $('#navigation').hidden = false;
+    renderDashboard();
+    navigate(currentView, false);
   }
+}
 
-  function loadSettingsData() {
-    // Only load API key data if the input is not currently being edited
-    if (!isEditingApiKey && currentApiKeyInput.hasAttribute('readonly')) {
-      chrome.storage.local.get(['geminiApiKey'], (result) => {
-        if (result.geminiApiKey) {
-          const maskedKey = result.geminiApiKey.substring(0, 8) + "..." + result.geminiApiKey.substring(result.geminiApiKey.length - 4);
-          currentApiKeyInput.value = maskedKey;
-          currentApiKeyInput.type = "password";
-        }
-      });
+function confirmAction(title, description, label, action) {
+  const dialog = $('#confirm-dialog');
+  $('#confirm-title').textContent = title;
+  $('#confirm-description').textContent = description;
+  $('#confirm-action').textContent = label;
+  dialog.returnValue = '';
+  dialog.addEventListener('close', async () => {
+    if (dialog.returnValue === 'confirm') {
+      try { await action(); await refresh(); } catch (error) { showProblem(error); }
     }
-  }
+  }, { once: true });
+  dialog.showModal();
+}
 
-  // Open settings modal
-  settingsBtn.addEventListener("click", () => {
-    openSettingsModal();
-  });
-
-  // Close settings modal
-  closeSettingsBtn.addEventListener("click", () => {
-    closeSettingsModal();
-  });
-
-  // Close modal when clicking outside
-  window.addEventListener("click", (event) => {
-    if (event.target === settingsModal) {
-      closeSettingsModal();
-    }
-  });
-
-  // Show/Hide API key
-  showHideKeyBtn.addEventListener("click", () => {
-    // Don't allow toggling during editing
-    if (isEditingApiKey) {
-      return;
-    }
-    
-    chrome.storage.local.get(['geminiApiKey'], (result) => {
-      if (result.geminiApiKey) {
-        const eyeIcon = showHideKeyBtn.querySelector('.eye-icon');
-        const eyeOffIcon = showHideKeyBtn.querySelector('.eye-off-icon');
-        
-        // Toggle visibility of the API key
-        if (currentApiKeyInput.type === "password") {
-          currentApiKeyInput.value = result.geminiApiKey;
-          currentApiKeyInput.type = "text";
-          eyeIcon.style.display = "none";
-          eyeOffIcon.style.display = "block";
-        } else {
-          const maskedKey = result.geminiApiKey.substring(0, 8) + "..." + result.geminiApiKey.substring(result.geminiApiKey.length - 4);
-          currentApiKeyInput.value = maskedKey;
-          currentApiKeyInput.type = "password";
-          eyeIcon.style.display = "block";
-          eyeOffIcon.style.display = "none";
-        }
-      }
-    });
-  });
-
-  // Change API key
-  changeApiKeyBtn.addEventListener("click", () => {
-    isEditingApiKey = true;
-    currentApiKeyInput.removeAttribute('readonly');
-    currentApiKeyInput.focus();
-    
-    // Load the full API key for editing
-    chrome.storage.local.get(['geminiApiKey'], (result) => {
-      if (result.geminiApiKey) {
-        currentApiKeyInput.value = result.geminiApiKey;
-        currentApiKeyInput.type = "text";
-      }
-    });
-    
-    // Disable the eye icon during editing
-    showHideKeyBtn.style.opacity = "0.5";
-    showHideKeyBtn.style.pointerEvents = "none";
-    
-    // Show confirm and cancel buttons
-    const checkmarkBtn = document.getElementById("confirm-api-key");
-    const cancelBtn = document.getElementById("cancel-api-key");
-    if (checkmarkBtn) {
-      checkmarkBtn.style.display = "inline-flex";
-    }
-    if (cancelBtn) {
-      cancelBtn.style.display = "inline-flex";
-    }
-    
-    // Hide the change button
-    changeApiKeyBtn.style.display = "none";
-  });
-
-  // Cancel API key change
-  document.getElementById("cancel-api-key").addEventListener("click", () => {
-    isEditingApiKey = false;
-    // Reset to readonly state
-    currentApiKeyInput.setAttribute('readonly', true);
-    
-    // Reload the original API key (masked)
-    chrome.storage.local.get(['geminiApiKey'], (result) => {
-      if (result.geminiApiKey) {
-        const maskedKey = result.geminiApiKey.substring(0, 8) + "..." + result.geminiApiKey.substring(result.geminiApiKey.length - 4);
-        currentApiKeyInput.value = maskedKey;
-        currentApiKeyInput.type = "password";
-      }
-    });
-    
-    // Hide confirm and cancel buttons, show change button
-    const checkmarkBtn = document.getElementById("confirm-api-key");
-    const cancelBtn = document.getElementById("cancel-api-key");
-    if (checkmarkBtn) {
-      checkmarkBtn.style.display = "none";
-    }
-    if (cancelBtn) {
-      cancelBtn.style.display = "none";
-    }
-    changeApiKeyBtn.style.display = "inline-flex";
-    
-    // Reset eye icon state and re-enable it
-    const eyeIcon = showHideKeyBtn.querySelector('.eye-icon');
-    const eyeOffIcon = showHideKeyBtn.querySelector('.eye-off-icon');
-    eyeIcon.style.display = "block";
-    eyeOffIcon.style.display = "none";
-    showHideKeyBtn.style.opacity = "1";
-    showHideKeyBtn.style.pointerEvents = "auto";
-  });
-
-  // Confirm API key change
-  document.getElementById("confirm-api-key").addEventListener("click", () => {
-    const newApiKey = currentApiKeyInput.value.trim();
-    if (newApiKey && newApiKey.length > 10) { // Basic validation
-      chrome.storage.local.set({ geminiApiKey: newApiKey }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('Error saving API key:', chrome.runtime.lastError);
-          return;
-        }
-        
-        // Show success message briefly
-        const checkmarkBtn = document.getElementById("confirm-api-key");
-        const originalText = checkmarkBtn.innerHTML;
-        checkmarkBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>';
-        checkmarkBtn.style.backgroundColor = "#005BAA";
-        
-        setTimeout(() => {
-          
-          // Reset to readonly state
-          currentApiKeyInput.setAttribute('readonly', true);
-          
-          // Mask the key again
-          const maskedKey = newApiKey.substring(0, 8) + "..." + newApiKey.substring(newApiKey.length - 4);
-          currentApiKeyInput.value = maskedKey;
-          currentApiKeyInput.type = "password";
-          
-          // Hide confirm and cancel buttons and show change button
-          const checkmarkBtn = document.getElementById("confirm-api-key");
-          const cancelBtn = document.getElementById("cancel-api-key");
-          if (checkmarkBtn) {
-            checkmarkBtn.style.display = "none";
-            checkmarkBtn.style.backgroundColor = "";
-            checkmarkBtn.innerHTML = originalText;
-          }
-          if (cancelBtn) {
-            cancelBtn.style.display = "none";
-          }
-          changeApiKeyBtn.style.display = "inline-flex";
-          
-          // Reset eye icon state
-          const eyeIcon = showHideKeyBtn.querySelector('.eye-icon');
-          const eyeOffIcon = showHideKeyBtn.querySelector('.eye-off-icon');
-          eyeIcon.style.display = "block";
-          eyeOffIcon.style.display = "none";
-          
-          // Re-enable the eye icon
-          showHideKeyBtn.style.opacity = "1";
-          showHideKeyBtn.style.pointerEvents = "auto";
-          
-          // Reset editing state
-          isEditingApiKey = false;
-        }, 1000);
-      });
-    } else {
-      // Show error for invalid API key
-      currentApiKeyInput.style.borderColor = "#ef4444";
-      setTimeout(() => {
-        currentApiKeyInput.style.borderColor = "#d1d5db";
-      }, 2000);
-    }
-  });
-
-  // Delete API key
-  deleteApiKeyBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to delete your API key? \n\n Note: This will delete your summarization history and remove access to the summarization feature.")) {
-      chrome.storage.local.remove(['geminiApiKey', 'summaries'], () => {
-        closeSettingsModal();
-        showApiSetup();
-      });
-    }
-  });
-
-  // Clear button
-  clearPopupBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to delete your history? This will delete all the summaries.")) {
-      chrome.storage.local.set({ summaries: [] }, () => {
-        loadSummaries();
-      });
-    }
-  });
-
-  // Format timestamp on summaries
-  function formatTimeAgo(timestamp) {
-    if (!timestamp) return "";
-    
-    const now = Date.now();
-    const diff = now - timestamp;
-    
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else if (minutes > 0) {
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    } else {
-      return "Just now";
-    }
-  }
-
-  // Give timestamps on old summaries
-  function migrateOldSummaries() {
-    chrome.storage.local.get({ summaries: [] }, (data) => {
-      const summaries = data.summaries;
-      let needsMigration = false;
-      
-      // Check if any summaries need migration
-      summaries.forEach(summary => {
-        if (typeof summary === 'string') {
-          needsMigration = true;
-        }
-      });
-      
-      if (needsMigration) {
-        const migratedSummaries = summaries.map(summary => {
-          if (typeof summary === 'string') {
-
-            // Convert old string format to new object format
-            return {
-              text: summary,
-              timestamp: Date.now() // Use current time for old summaries
-            };
-          }
-          return summary; // Already in new format
-        });
-        
-        chrome.storage.local.set({ summaries: migratedSummaries }, () => {
-          console.log('Migrated old summaries to new format');
-        });
-      }
-    });
-  }
-
-  // Close popup
-  document.getElementById("close-popup").addEventListener("click", () => {
-    window.close();
-  });
-
-  // Handle Enter key in API input
-  apiKeyInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      saveApiKeyBtn.click();
-    }
-  });
-
-  // Show/Hide API key on setup page
-  document.getElementById("show-hide-setup-key").addEventListener("click", () => {
-    const eyeIcon = document.querySelector("#show-hide-setup-key .eye-icon");
-    const eyeOffIcon = document.querySelector("#show-hide-setup-key .eye-off-icon");
-    
-    if (apiKeyInput.type === "password") {
-      apiKeyInput.type = "text";
-      eyeIcon.style.display = "none";
-      eyeOffIcon.style.display = "block";
-    } else {
-      apiKeyInput.type = "password";
-      eyeIcon.style.display = "block";
-      eyeOffIcon.style.display = "none";
-    }
-  });
-
-  // Handle Enter key in current API key input for confirming changes
-  currentApiKeyInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter" && !currentApiKeyInput.hasAttribute('readonly')) {
-      document.getElementById("confirm-api-key").click();
-    }
-  });
+decorateButtons();
+document.body.classList.toggle('window-mode', !chrome.extension.getViews({ type: 'popup' }).includes(window));
+document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => navigate(button.dataset.view)));
+on('.wordmark', 'click', event => { event.preventDefault(); if (state?.keyConfigured) navigate('home'); });
+on('#open-window', 'click', async () => {
+  await chrome.windows.create({ url: chrome.runtime.getURL('popup.html'), type: 'popup', width: 920, height: 820 });
+  if (chrome.extension.getViews({ type: 'popup' }).includes(window)) window.close();
 });
+on('#dismiss-notice', 'click', async () => { $('#notice').hidden = true; if (currentNotice) await request('DISMISS_NOTICE', { id: currentNotice.id }); });
+on('#dismiss-intro', 'click', async () => { await request('SEEN_INTRO'); await refresh(); });
+on('#view-history', 'click', () => navigate('history'));
+on('#replace-key', 'click', () => { $('#replace-key').hidden = true; $('#replacement-form').hidden = false; createKeyForm($('#replacement-form'), true); $('#new-key').focus(); });
+on('#clear-history', 'click', () => confirmAction('Clear your history?', 'Your saved summaries will be removed. Your activity, streaks, and connected key will stay.', 'Clear history', () => request('CLEAR_HISTORY')));
+on('#remove-key', 'click', () => confirmAction('Disconnect this key?', 'The key will be removed from this browser. History and activity will stay. To revoke the key itself, use Google AI Studio.', 'Remove key', async () => { successSample = null; await request('REMOVE_KEY'); }));
+on('#reset-all', 'click', () => confirmAction('Start with a clean slate?', 'Your key, summaries, and activity will be permanently removed from this browser. This does not revoke your key at Google.', 'Reset everything', async () => { successSample = null; lastTotal = undefined; await request('RESET_ALL'); }));
+on('#shortcut-settings', 'click', () => chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }));
+chrome.storage.onChanged.addListener((changes, area) => {
+  if ((area === 'local' && changes.appState) || (area === 'session' && changes.notice)) refresh().catch(showProblem);
+});
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderHeatmap, 100); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    document.querySelectorAll('input[type=text],input[type=password]').forEach(input => { input.type = 'password'; });
+    document.querySelectorAll('[aria-label="Hide entered key"]').forEach(button => { button.setAttribute('aria-label', 'Show entered key'); button.setAttribute('aria-pressed', 'false'); });
+  }
+  else refresh().catch(showProblem);
+});
+window.addEventListener('pagehide', () => { clearInterval(dayTimer); document.querySelectorAll('input[type=password],input[type=text]').forEach(input => { input.value = ''; }); });
+dayTimer = setInterval(() => { if (state?.keyConfigured && !document.hidden && renderedDay !== dayKey()) renderDashboard(); }, 60_000);
+refresh().catch(error => { $('#boot').textContent = 'Could not load your local workspace.'; showProblem(error); });

@@ -1,118 +1,73 @@
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === "SHOW_SUMMARY") {
-    showSummary(message.summary);
-  } else if (message.type === "SHOW_ERROR") {
-    showError(message.message);
+(() => {
+  if (globalThis.__selectSummaryInstalled) return;
+  globalThis.__selectSummaryInstalled = true;
+  let host;
+  let dismissedWhileLoading = false;
+
+  function show({ kind, title, text }) {
+    if (kind === 'loading') dismissedWhileLoading = false;
+    if (dismissedWhileLoading && kind === 'summary') return;
+    host?.remove();
+    host = document.createElement('select-summary-card');
+    host.style.setProperty('all', 'initial', 'important');
+    host.style.setProperty('font-family', '"Helvetica Neue", Helvetica, Arial, sans-serif', 'important');
+    host.style.setProperty('position', 'fixed', 'important');
+    host.style.setProperty('bottom', '20px', 'important');
+    host.style.setProperty('right', '20px', 'important');
+    host.style.setProperty('z-index', '2147483647', 'important');
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('link');
+    style.rel = 'stylesheet';
+    style.href = chrome.runtime.getURL('summary.css');
+    const card = document.createElement('section');
+    card.className = `card ${kind}`;
+    card.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    card.setAttribute('aria-label', 'Select Summary');
+    const header = document.createElement('div');
+    header.className = 'header';
+    const brand = document.createElement('span');
+    brand.className = 'brand';
+    brand.textContent = 'Select Summary';
+    const close = document.createElement('button');
+    close.className = 'close';
+    close.textContent = 'Close';
+    close.setAttribute('aria-label', 'Close summary card');
+    close.addEventListener('click', () => { dismissedWhileLoading = kind === 'loading'; host?.remove(); });
+    header.append(brand, close);
+    const heading = document.createElement('h2');
+    heading.textContent = title;
+    const paragraph = document.createElement('p');
+    paragraph.className = 'text';
+    paragraph.textContent = text;
+    card.append(header, heading, paragraph);
+    if (kind === 'loading') {
+      const progress = document.createElement('div');
+      progress.className = 'progress';
+      progress.setAttribute('aria-hidden', 'true');
+      card.append(progress);
+    }
+    if (kind === 'summary') {
+      const footer = document.createElement('div');
+      footer.className = 'footer';
+      const hint = document.createElement('span');
+      hint.textContent = 'Saved to your history';
+      const copy = document.createElement('button');
+      copy.textContent = 'Copy summary';
+      copy.className = 'copy';
+      copy.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(text); copy.textContent = 'Copied'; }
+        catch { hint.textContent = 'Copy blocked. Select this text to copy manually.'; }
+      });
+      footer.append(hint, copy);
+      card.append(footer);
+    }
+    shadow.append(style, card);
+    document.documentElement.append(host);
   }
-});
 
-// Show summary in the bottom right
-function showSummary(summary) {
-  const existing = document.getElementById("tldr-card");
-  if (existing) existing.remove();
-
-  fetch(chrome.runtime.getURL("summary.html"))
-    .then(res => res.text())
-    .then(html => {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = html;
-      const popup = tempDiv.firstElementChild;
-
-      // Load CSS if not already there
-      if (!document.getElementById("summary-style")) {
-        const link = document.createElement("link");
-        link.id = "summary-style";
-        link.rel = "stylesheet";
-        link.href = chrome.runtime.getURL("summary.css");
-        document.head.appendChild(link);
-      }
-
-      popup.querySelector("#summary-text").innerText = summary;
-
-      document.body.appendChild(popup);
-
-      // Auto-hide after 15 seconds
-      const autoHideTimer = setTimeout(() => {
-        if (popup && popup.parentNode) {
-          popup.remove();
-        }
-      }, 15000);
-
-      // Copy button functionality
-      const copyBtn = popup.querySelector("#copy-btn");
-      copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(summary).then(() => {
-          const copyText = copyBtn.querySelector("span");
-          if (copyText) {
-            copyText.innerText = "Copied";
-            setTimeout(() => {
-              copyText.innerText = "Copy";
-            }, 1500);
-          }
-        });
-      });
-
-      // Close button functionality
-      document.addEventListener("click", function (e) {
-        if (e.target && e.target.id === "close-card") {
-          const popup = document.getElementById("tldr-card");
-          if (popup && popup.parentNode) {
-            popup.remove();
-          }
-        }
-      });
-    })
-    .catch(error => {
-      console.error('Error loading summary popup:', error);
-    });
-}
-
-// Show error message in the bottom right
-function showError(message) {
-  const existing = document.getElementById("tldr-card");
-  if (existing) existing.remove();
-
-  fetch(chrome.runtime.getURL("summary.html"))
-    .then(res => res.text())
-    .then(html => {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = html;
-      const popup = tempDiv.firstElementChild;
-
-      // Load CSS if not already there
-      if (!document.getElementById("summary-style")) {
-        const link = document.createElement("link");
-        link.id = "summary-style";
-        link.rel = "stylesheet";
-        link.href = chrome.runtime.getURL("summary.css");
-        document.head.appendChild(link);
-      }
-
-      // Change the popup to show error
-      popup.querySelector("#summary-text").innerText = message;
-      popup.querySelector("#summary-text").style.color = "#ff3f3fff";
-      popup.querySelector("#copy-btn").style.display = "none";
-
-      document.body.appendChild(popup);
-
-      // Auto-hide error after 15 seconds
-      const autoHideTimer = setTimeout(() => {
-        if (popup && popup.parentNode) {
-          popup.remove();
-        }
-      }, 15000);
-
-      // Close button functionality for error popup
-      document.addEventListener("click", function (e) {
-        if (e.target && e.target.id === "close-card") {
-          const popup = document.getElementById("tldr-card");
-          if (popup && popup.parentNode) {
-            popup.remove();
-          }
-        }
-      });
-    })
-    .catch(error => { 
-      console.error('Error loading error popup:', error); 
-    });
-}
+  chrome.runtime.onMessage.addListener((message, sender) => {
+    if (sender.id !== chrome.runtime.id || sender.tab || message?.type !== 'SELECT_SUMMARY_CARD') return;
+    if (!['summary', 'loading', 'error'].includes(message.kind) || typeof message.title !== 'string' || typeof message.text !== 'string') return;
+    show(message);
+  });
+})();

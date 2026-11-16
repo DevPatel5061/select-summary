@@ -1,0 +1,19 @@
+{
+  "name": "select-summary",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Development checks for the Select Summary Chrome extension. No runtime dependencies.",
+  "scripts": {
+    "test": "TZ=America/Toronto node --test tests/*.test.js",
+    "test:browser": "playwright test",
+    "check": "node scripts/check.js",
+    "verify": "npm run check && npm test && npm run test:browser"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  }
+}

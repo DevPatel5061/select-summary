@@ -1,132 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Select Summary</title>
-  <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
 </head>
-
 <body>
-  <div id="api-setup" class="api-setup">
-    <h3 class="api-setup-title">🔑 Google API Key Setup</h3>
-
-    <div class="api-input-container">
-      <input type="password" id="api-key-input" placeholder="API key goes here" />
-
-      <button id="show-hide-setup-key" class="toggle-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          class="eye-icon">
-          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          class="eye-off-icon" style="display: none;">
-          <path
-            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </svg>
-
-      </button>
-    </div>
-
-    <button id="save-api-key" class="save-btn">Save API Key</button>
-
-    <div class="ai-info">
-      <p>This extension uses Gemini 2.5 Flash-Lite.</p>
-    </div>
-
-    <details class="api-instructions">
-      <summary class="api-instruction-title">Setup Instructions</summary>
-        <p>1. Make sure you're logged into a Google account</p>
-        <p>2. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"> Google Studio AI</a></p>
-        <p>3. Click "Create API Key"</p>
-        <p>4. Copy the API Key</p>
-        <p>5. Paste it above</p>
-    </div>
-  </details>
-
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="wordmark" href="#home" aria-label="Select Summary home">Select<span>Summary</span><span class="version">3.0</span></a>
+      <button class="icon-button" id="open-window" aria-label="Open in a separate window" title="Open in a separate window" data-icon="expand"></button>
+    </header>
+    <nav aria-label="Main navigation" id="navigation" hidden>
+      <button class="nav-button" data-view="home" aria-current="page">Overview</button>
+      <button class="nav-button" data-view="history">History <span id="history-count" class="count">0</span></button>
+      <button class="nav-button" data-view="settings">Settings</button>
+    </nav>
+    <main id="main">
+      <div id="boot" class="empty"><p>Getting things ready…</p></div>
+      <section id="onboarding" hidden aria-labelledby="setup-title"></section>
+      <section id="home" hidden aria-labelledby="home-title">
+        <div id="upgrade-intro" class="intro-callout" hidden>
+          <p><strong>A fresh start for your reading.</strong> Shorter summaries, a new look, and activity that stays on your device. Your key and history are still here.</p>
+          <button id="dismiss-intro" class="text-button">Got it</button>
+        </div>
+        <div class="hero">
+          <p class="eyebrow">A LITTLE CLARITY, EVERY DAY</p>
+          <h1 id="home-title">Less reading.<br><span>More understanding.</span></h1>
+          <p class="hero-description">Highlight the interesting part.<br>We’ll help you find the important part.</p>
+          <div class="connection-pill"><span class="status-dot"></span>Gemini connected <span class="local-note">History stays local</span></div>
+        </div>
+        <div class="stats-grid" aria-label="Your reading activity">
+          <div class="metric"><span class="metric-label">Summaries</span><strong id="stat-total">0</strong><span id="stat-today" class="metric-note">0 today</span></div>
+          <div class="metric"><span class="metric-label">Time saved</span><strong id="stat-time">0s</strong><span class="metric-note">Estimated reading time</span></div>
+          <div class="metric"><span class="metric-label">Current streak</span><strong id="stat-streak">0<span> days</span></strong><span id="stat-best-streak" class="metric-note">Best: 0 days</span></div>
+          <div class="metric"><span class="metric-label">Personal best</span><strong id="stat-best">0</strong><span class="metric-note">Summaries in one day</span></div>
+        </div>
+        <div class="activity-panel panel">
+          <div class="section-heading"><h2>Your consistency, in blue</h2><span id="activity-range" class="muted">Last 13 weeks</span></div>
+          <div class="heatmap-layout"><div class="day-labels" aria-hidden="true"><span>Mon</span><span>Wed</span><span>Fri</span></div><div id="heatmap" class="heatmap" role="group" aria-label="Daily summary activity"></div></div>
+          <div class="activity-footer"><p id="activity-message">Your next highlight starts something.</p><div class="legend" aria-label="Darker blue means more summaries"><span>Less</span><i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i><span>More</span></div></div>
+          <p id="day-detail" class="day-detail" aria-live="polite">Choose a day to see its activity.</p>
+        </div>
+        <div class="quick-start"><span class="step-number">01</span><p><strong>Highlight. Right-click. Summarize.</strong><br><span class="muted">Or use <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> on a webpage.</span></p></div>
+        <div id="latest-area" hidden><div class="section-heading"><h2>Fresh from your reading</h2><button id="view-history" class="text-button">View history</button></div><div id="latest-summary"></div></div>
+      </section>
+      <section id="history" hidden aria-labelledby="history-title">
+        <div class="page-heading"><p class="eyebrow">THE SHORT VERSIONS</p><h1 id="history-title">A little less to remember.</h1><p class="muted">Your 10 most recent summaries, saved on this device.</p></div>
+        <div class="section-heading"><h2>Recent summaries</h2><button id="clear-history" class="text-button">Clear history</button></div>
+        <div id="summary-list"></div>
+      </section>
+      <section id="settings" hidden aria-labelledby="settings-title">
+        <div class="page-heading"><p class="eyebrow">MAKE YOURSELF AT HOME</p><h1 id="settings-title">Your space. Your settings.</h1><p class="muted">Simple controls. Nothing hidden.</p></div>
+        <div class="panel settings-panel">
+          <div class="section-heading"><h2>Gemini connection</h2><span class="badge">Connected</span></div>
+          <p id="key-status" class="muted"></p><p class="small">Your saved key stays masked. Test a replacement before switching.</p>
+          <button id="replace-key" class="secondary" data-icon="key">Replace key</button>
+          <div id="replacement-form" hidden></div>
+          <button id="remove-key" class="text-button destructive">Remove key from this device</button>
+        </div>
+        <div class="panel settings-panel"><h2>Free extension. Clear boundaries.</h2><p class="small">No ads, analytics, subscriptions, or developer-run data collection. Your history and activity stay in this browser.</p><p class="small">Only text you ask to summarize is sent to Google. Gemini’s free tier may use inputs and outputs for product improvement and human review. Avoid sensitive information.</p><p class="small">Use a project without billing enabled to avoid API charges. We cannot verify your billing status. Google’s terms, availability, and limits apply.</p><p class="small">Keys are stored locally, not in an encrypted vault. Removing one here does not revoke it at Google.</p><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">Google API terms</a> <span class="muted"> · </span><a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer">API pricing</a></div>
+        <div class="panel settings-panel"><h2>Shortcuts and activity</h2><p class="small"><kbd>Alt</kbd> + <kbd>G</kbd> opens Select Summary.<br><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> summarizes a selection. On Mac, Alt is Option. Browser conflicts can prevent assignment.</p><button id="shortcut-settings" class="secondary">Customize shortcuts</button><p class="small muted">Time saved estimates reading at 225 words per minute. Streaks use your local calendar. Activity starts with this update; existing summaries do not create activity.</p></div>
+        <div class="panel settings-panel"><h2>Start fresh</h2><p class="small muted">Permanently remove your key, history, and activity from this browser.</p><button id="reset-all" class="secondary destructive">Reset all local data</button></div>
+      </section>
+    </main>
+    <footer class="app-footer"><span>Less noise. More signal.</span><span>Made for your next idea.</span></footer>
+  </div>
+  <aside id="notice" class="notice" hidden aria-live="polite"><div><strong id="notice-title"></strong><p id="notice-message"></p></div><button id="dismiss-notice" class="icon-button" aria-label="Dismiss message" data-icon="close"></button></aside>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-description"><form method="dialog"><p class="eyebrow">JUST CHECKING</p><h2 id="confirm-title"></h2><p id="confirm-description" class="muted"></p><div class="dialog-actions"><button value="cancel" class="secondary">Keep it</button><button value="confirm" class="primary" id="confirm-action">Confirm</button></div></form></dialog>
 </body>
-
-<div id="main-content" class="main-content" style="display: none;">
-  <div class="header-row">
-    <h2 class="popup-title">🤖 Select Summary</h2>
-
-    <button id="settings-btn" class="settings-btn">Settings</button>
-  </div>
-
-  <div id="summary-list">Summaries Failed to Load</div>
-
-  <div class="button-container">
-    <button class="clear-btn" id="clear-popup">Clear All</button>
-    <button class="close-btn" id="close-popup">Close</button>
-  </div>
-</div>
-
-<div id="settings-modal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 class="settings-title">⚙️ Settings</h3>
-      <button id="close-settings" class="close-modal-btn">&times;</button>
-    </div>
-
-    <div class="settings-section">
-      <h4>API Key Management</h4>
-
-    <div class="api-key-display">
-      <label>Current API Key:</label>
-
-      <div class="api-key-container">
-        <input type="password" id="current-api-key" readonly />
-
-        <button id="show-hide-key" class="toggle-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            class="eye-icon">
-            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            class="eye-off-icon" style="display: none;">
-            <path
-              d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-            <line x1="1" y1="1" x2="23" y2="23" />
-          </svg>
-        </button>
-
-      </div>
-    </div>
-    <div class="api-actions">
-      <button id="change-api-key" class="change-btn">Change API Key</button>
-      <button id="confirm-api-key" class="change-btn confirm-btn" style="display: none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20,6 9,17 4,12"></polyline>
-        </svg>
-      </button>
-
-      <button id="cancel-api-key" class="change-btn cancel-btn" style="display: none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-
-      <button id="delete-api-key" class="delete-btn">Delete API Key</button>
-    </div>
-
-    <div class="setting-info">
-      <p>Your API key is stored locally and never shared.</p>
-    </div>
-
-  </div>
-</div>
-</div>
-
-<script src="popup.js"></script>
-
-</body>
-
 </html>

@@ -31,7 +31,7 @@
   margin-bottom: 12px;
 }
 .brand {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   color: #0868e8;
   letter-spacing: -0.3px;
@@ -42,7 +42,10 @@ button {
   border: 0;
   border-radius: 8px;
   padding: 8px 12px;
-  transition: background 0.15s;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 button:focus-visible {
   outline: 3px solid #6c9ff0;
@@ -58,7 +61,7 @@ button:focus-visible {
 }
 .close:hover {
   background: #eaf2ff;
-  color: #0868e8;
+  color: #525d6e;
 }
 .close svg {
   display: block;
@@ -69,22 +72,12 @@ button:focus-visible {
   stroke: #e7ebf1;
 }
 .timer-progress {
-  stroke: #0868e8;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
+  stroke: #b8c0cc;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
   transform: rotate(-90deg);
   transform-origin: center;
-}
-.timed .timer-progress {
-  animation: close-countdown var(--close-duration) linear forwards;
-}
-h2 {
-  margin: 0 0 10px;
-  font-weight: 600;
-  font-size: 20px;
-  line-height: 1.2;
-  letter-spacing: -0.6px;
-  color: #151b28;
+  will-change: stroke-dashoffset;
 }
 .text {
   white-space: pre-wrap;
@@ -116,7 +109,15 @@ h2 {
   height: 16px;
 }
 .copy:hover {
-  background: #044bac;
+  background: #075fd4;
+  box-shadow:
+    inset 0 -3px 7px #003b8f33,
+    0 4px 12px #0868e81c;
+  transform: translateY(-1px);
+}
+.copy:active {
+  transform: translateY(0);
+  box-shadow: inset 0 2px 5px #003b8f40;
 }
 .progress {
   height: 3px;
@@ -143,11 +144,6 @@ h2 {
 @keyframes progress {
   to {
     background-position: -200% 0;
-  }
-}
-@keyframes close-countdown {
-  to {
-    stroke-dashoffset: 0;
   }
 }
 

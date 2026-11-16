@@ -2,7 +2,7 @@ export const VERSION = 3;
 export const HISTORY_LIMIT = 10;
 export const MAX_INPUT_LENGTH = 50_000;
 export const MODEL = 'gemini-3.5-flash-lite';
-// A local practice example. Onboarding never sends this paragraph to Google.
+// Bundled practice text. Only the portion explicitly selected for a practice action is sent to Google.
 export const SAMPLE_TEXT = `
 Community gardens turn empty city lots into shared spaces where residents grow fresh
 vegetables, meet their neighbors, and learn practical skills. Plants and trees provide
@@ -17,9 +17,6 @@ shared responsibility, and enough volunteers to keep it growing throughout the s
 `
   .replace(/\s+/g, ' ')
   .trim();
-export const SAMPLE_SUMMARY =
-  'Community gardens provide food, cooling, wildlife habitat, and social connections, but depend on safe soil, reliable water, and shared maintenance.';
-
 export class AppError extends Error {
   constructor(code, message) {
     super(message);
@@ -49,6 +46,7 @@ export function initialState() {
   return {
     version: VERSION,
     key: null,
+    keyValidated: false,
     credentialRevision: 0,
     history: [],
     activity: {},
@@ -94,6 +92,7 @@ export function addSummary(state, text, sourceWords, timestamp, id) {
   const previous = state.activity[day] || { count: 0, secondsSaved: 0 };
   return {
     ...state,
+    keyValidated: true,
     history: [{ id, text, timestamp, sourceWords, summaryWords }, ...state.history].slice(
       0,
       HISTORY_LIMIT
@@ -156,6 +155,7 @@ export function publicState(state) {
   return {
     version: state.version,
     keyConfigured: Boolean(state.key),
+    keyValidated: state.keyValidated ?? false,
     keySuffix: state.key?.slice(-4) || '',
     history: state.history,
     activity: state.activity,
@@ -193,6 +193,15 @@ export function dashboardMessage(stats) {
   };
 }
 
-export function isPopupSender(sender, runtime) {
-  return sender.id === runtime.id && sender.url === runtime.getURL('popup.html');
+// Only our top-level UI documents may manage credentials or local history.
+export function isAppUrl(url, runtime) {
+  if (typeof url !== 'string') return false;
+  const documentUrl = url.split(/[?#]/)[0];
+  return ['popup.html', 'welcome.html'].some(
+    (page) => documentUrl === runtime.getURL(page)
+  );
+}
+
+export function isAppSender(sender, runtime) {
+  return sender.id === runtime.id && isAppUrl(sender.url, runtime);
 }

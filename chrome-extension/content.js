@@ -5,6 +5,7 @@
 
   let host;
   let closeTimer;
+  let countdownFrame;
   let dismissedWhileLoading = false;
 
   // Original CC0 button artwork; no remote images or icon library.
@@ -25,7 +26,7 @@
         circle.setAttribute('cx', '16');
         circle.setAttribute('cy', '16');
         circle.setAttribute('r', '13');
-        circle.setAttribute('pathLength', '1');
+        circle.setAttribute('pathLength', '100');
         circle.setAttribute('class', className);
         svg.append(circle);
       }
@@ -42,10 +43,11 @@
 
   function dismiss() {
     clearTimeout(closeTimer);
+    cancelAnimationFrame(countdownFrame);
     host?.remove();
   }
 
-  function show({ kind, title, text }) {
+  function show({ kind, text }) {
     if (kind === 'loading') dismissedWhileLoading = false;
     if (dismissedWhileLoading && kind !== 'loading') return;
     dismiss();
@@ -82,12 +84,11 @@
 
     const duration = kind === 'summary' ? 25_000 : kind === 'error' ? 10_000 : 0;
     const close = document.createElement('button');
-    close.className = duration ? 'close timed' : 'close';
+    close.className = 'close';
     close.setAttribute('aria-label', 'Close summary card');
     close.title = duration
       ? `Close · automatically closes after ${duration / 1000} seconds`
       : 'Close';
-    close.style.setProperty('--close-duration', `${duration}ms`);
     close.append(buttonIcon('close'));
     close.addEventListener('click', () => {
       dismissedWhileLoading = kind === 'loading';
@@ -95,12 +96,10 @@
     });
     header.append(brand, close);
 
-    const heading = document.createElement('h2');
-    heading.textContent = title;
     const paragraph = document.createElement('p');
     paragraph.className = 'text';
     paragraph.textContent = text;
-    card.append(header, heading, paragraph);
+    card.append(header, paragraph);
 
     if (kind === 'loading') {
       const progress = document.createElement('div');
@@ -133,7 +132,21 @@
     document.documentElement.append(host);
 
     // Loading does not expire. Replacing a card always cancels its old timer.
-    if (duration) closeTimer = setTimeout(dismiss, duration);
+    if (duration) {
+      closeTimer = setTimeout(dismiss, duration);
+      // Use one high-resolution clock for the ring rather than coarse timer
+      // ticks. Reduced-motion users keep the same expiry without animation.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const ring = close.querySelector('.timer-progress');
+        const start = performance.now();
+        const draw = (now) => {
+          const progress = Math.min(1, (now - start) / duration);
+          ring.style.strokeDashoffset = String(100 * (1 - progress));
+          if (progress < 1) countdownFrame = requestAnimationFrame(draw);
+        };
+        countdownFrame = requestAnimationFrame(draw);
+      }
+    }
   }
 
   chrome.runtime.onMessage.addListener((message, sender) => {
@@ -144,7 +157,7 @@
     )
       return;
     if (!['summary', 'loading', 'error'].includes(message.kind)) return;
-    if (typeof message.title !== 'string' || typeof message.text !== 'string') return;
+    if (typeof message.text !== 'string') return;
     show(message);
   });
 })();

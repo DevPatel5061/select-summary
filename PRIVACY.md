@@ -6,7 +6,7 @@ Select Summary has no analytics, advertising, telemetry, developer-run backend, 
 
 When you explicitly request a summary, the selected text and fixed summarization instructions are sent directly to Google's Gemini API over HTTPS. The API key authenticates that request in a header. Google also receives the network metadata associated with the request. Page URLs and titles are not included by the extension.
 
-Saving an API key makes no network request. The required practice walkthrough uses a bundled paragraph and example summary entirely on your device. Each real summarization action makes one Gemini request; oversized responses are shortened locally. Failed requests are not automatically retried.
+After you accept the Google data notice, pasting a key (or selecting Connect) sends one small connection-check request to Gemini. A successful check saves the key. Each of the two required practice actions sends the portion of the bundled paragraph you select to Gemini and displays its real response inside the welcome page. Those successful summaries count toward local history, activity, and XP; the connection check does not. Each summary makes one request, and oversized responses are shortened locally. Failed requests do not retry automatically.
 
 Google controls its API processing and retention. Under its free-tier terms, inputs and responses may be used to improve products and may be reviewed by people, subject to regional and account terms. Do not submit sensitive, personal, or confidential information. Consult [Google's API terms](https://ai.google.dev/gemini-api/terms) for the terms that apply to you.
 
@@ -20,7 +20,7 @@ The extension stores the following in `chrome.storage.local`, restricted to trus
 | The latest 10 summaries and available timestamps | Local summary history |
 | Original/summary word counts | Estimate reading time saved without retaining source selections |
 | Daily summary counts and estimated seconds saved | Local activity chart, streaks, and personal bests |
-| Setup/practice progress and a schema version | Resume onboarding and preserve data across upgrades |
+| Setup/practice progress, connection status, and a schema version | Resume onboarding, show the AI Connected badge, and preserve upgrades |
 
 Original selections are used transiently for API processing; they are not separately saved in history. **Summaries themselves may contain information from the original selection.** Local data is not sent to the developer or synchronized by the extension. Chrome's local storage is not an encrypted vault: someone with access to your browser profile or device may be able to access it.
 
@@ -40,6 +40,6 @@ The extension has no subscriptions, paid features, or payment integration. Gemin
 
 Google AI Studio and documentation links open external websites with their own terms and privacy practices. Fonts and interface assets are bundled or provided by your operating system; the extension does not fetch web fonts or third-party icon assets.
 
-## Internal development testing
+## Welcome and rewards
 
-Tests use synthetic text, synthetic credentials, and mocked Gemini responses. Browser tests use a disposable Chromium profile and a localhost fixture. They do not use a real API key, incur Gemini charges, or upload user data. Test diagnostics are development artifacts and are not product features.
+The welcome tab opens locally on first installation, not on updates. Setup illustrations and the pin reminder are bundled, code-based visuals; they do not record or access your Google account. XP and reader levels are derived from local summary counts and are never transmitted. Replaying the practice guide makes new API requests when you explicitly summarize the sample again.

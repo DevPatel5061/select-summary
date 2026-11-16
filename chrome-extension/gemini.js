@@ -32,10 +32,15 @@ export function responseText(data) {
   return text.replace(/\s+/g, ' ').trim();
 }
 
-export async function summarize(
+async function generate(
   text,
   key,
-  { fetcher = fetch, signal = AbortSignal.timeout(24_000) } = {}
+  {
+    fetcher = fetch,
+    signal = AbortSignal.timeout(24_000),
+    instruction = INSTRUCTION,
+    maxOutputTokens = 384
+  } = {}
 ) {
   const source = validateSelection(text);
   if (typeof key !== 'string' || !key.trim())
@@ -54,10 +59,10 @@ export async function summarize(
         signal,
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: INSTRUCTION }] },
+          systemInstruction: { parts: [{ text: instruction }] },
           contents: [{ role: 'user', parts: [{ text: source }] }],
           generationConfig: {
-            maxOutputTokens: 384,
+            maxOutputTokens,
             thinkingConfig: { thinkingLevel: 'minimal' }
           }
         })
@@ -106,7 +111,21 @@ export async function summarize(
   }
   // One request per action: never double latency or consume extra quota to
   // repair a verbose response. Prefer complete sentences when applying the cap.
-  return conciseText(await request());
+  return request();
+}
+
+// Summaries and validation share authentication, timeouts, and safe errors.
+export async function summarize(text, key, options = {}) {
+  return conciseText(await generate(text, key, options));
+}
+
+export async function validateApiKey(key, options = {}) {
+  await generate('Connection check.', key, {
+    signal: AbortSignal.timeout(12_000),
+    ...options,
+    instruction: 'Reply only with OK. This is an API connection check.',
+    maxOutputTokens: 64
+  });
 }
 
 export function conciseText(text, limit = 35) {

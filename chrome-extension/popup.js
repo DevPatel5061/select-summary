@@ -9,6 +9,8 @@ let currentView = 'home';
 let currentNotice;
 let connectingUI = false;
 let tutorial = null;
+let firstRefresh = true;
+let replayIntro = false;
 let platform = 'unknown';
 let shortcut = '';
 let setupRenderedStep = null;
@@ -228,20 +230,47 @@ function renderDashboard() {
 
 // Templates contain only bundled HTML. Keys and generated text are assigned
 // through DOM properties, never interpolated into markup.
+function celebrateConnection() {
+  const layer = element('div', 'connection-confetti');
+  layer.setAttribute('aria-hidden', 'true');
+  for (let index = 0; index < 18; index++) {
+    const piece = element('i');
+    piece.style.setProperty('--piece', index);
+    layer.append(piece);
+  }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 1600);
+}
+
 function createKeyForm(container, replacement = false) {
   container.replaceChildren($('#key-form-template').content.cloneNode(true));
+  const form = container.querySelector('form');
   const input = container.querySelector('#new-key');
   const consent = container.querySelector('input[type=checkbox]');
   const submit = container.querySelector('button[type=submit]');
   const reveal = container.querySelector('button[type=button]');
   const status = container.querySelector('.form-status');
+  let pasted = false;
+  let autoTimer;
+  let lastAttempt = '';
 
   function updateSubmit() {
     submit.disabled = connectingUI || !consent.checked || !input.value.trim();
   }
-
-  input.addEventListener('input', updateSubmit);
-  consent.addEventListener('change', updateSubmit);
+  // Pasting only schedules a check after consent. Typing never makes a request
+  // per keystroke, and a failed auto-check is not silently retried.
+  function scheduleValidation() {
+    clearTimeout(autoTimer);
+    updateSubmit();
+    if (pasted && !submit.disabled && input.value.trim() !== lastAttempt) {
+      autoTimer = setTimeout(() => form.requestSubmit(), 450);
+    }
+  }
+  input.addEventListener('paste', () => {
+    pasted = true;
+  });
+  input.addEventListener('input', scheduleValidation);
+  consent.addEventListener('change', scheduleValidation);
   reveal.addEventListener('click', () => {
     const visible = input.type === 'password';
     input.type = visible ? 'text' : 'password';
@@ -249,9 +278,11 @@ function createKeyForm(container, replacement = false) {
     reveal.setAttribute('aria-pressed', String(visible));
   });
 
+  let cancel;
   if (replacement) {
-    const cancel = element('button', 'secondary', 'Cancel');
+    cancel = element('button', 'secondary', 'Cancel');
     cancel.addEventListener('click', () => {
+      clearTimeout(autoTimer);
       container.replaceChildren();
       container.hidden = true;
       $('#replace-key').hidden = false;
@@ -259,36 +290,43 @@ function createKeyForm(container, replacement = false) {
     });
     container.append(cancel);
   }
-
-  container.querySelector('form').addEventListener('submit', async (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submit.disabled || connectingUI) return;
+    clearTimeout(autoTimer);
+    lastAttempt = input.value.trim();
+    pasted = false;
     connectingUI = true;
+    input.readOnly = true;
+    consent.disabled = true;
+    if (cancel) cancel.disabled = true;
     updateSubmit();
-
+    status.textContent = 'Checking Gemini…';
     try {
-      // Save locally and continue immediately; no Gemini validation request.
-      await request('CONNECT_KEY', { key: input.value, consent: consent.checked });
+      await request('CONNECT_KEY', { key: lastAttempt, consent: consent.checked });
       input.value = '';
       container.replaceChildren();
       if (replacement) {
         container.hidden = true;
         $('#replace-key').hidden = false;
-        toast('Key saved.');
+        toast('AI Connected');
       }
       setupRenderedStep = null;
       connectingUI = false;
       await refresh();
+      celebrateConnection();
     } catch (error) {
       status.textContent = error.message;
       status.setAttribute('role', 'alert');
       input.focus();
     } finally {
       connectingUI = false;
+      input.readOnly = false;
+      consent.disabled = false;
+      if (cancel) cancel.disabled = false;
       updateSubmit();
     }
   });
-
   decorateButtons(container);
   updateSubmit();
 }
@@ -300,9 +338,8 @@ async function setupStep(step) {
   renderOnboarding();
 }
 
-function renderOnboarding() {
+function renderOnboarding(step = state.onboardingStep) {
   const container = $('#onboarding');
-  const step = state.onboardingStep;
   container.hidden = false;
   if (setupRenderedStep === step) return;
   setupRenderedStep = step;
@@ -314,7 +351,14 @@ function renderOnboarding() {
   ][step];
   container.replaceChildren($(template).content.cloneNode(true));
   if (step === 0) {
-    on('#start-setup', 'click', () => setupStep(1));
+    on('#start-setup', 'click', async () => {
+      if (replayIntro) {
+        replayIntro = false;
+        setupRenderedStep = null;
+        await request('RESTART_TUTORIAL');
+        await refresh();
+      } else await setupStep(1);
+    });
   } else if (step === 1) {
     on('#setup-back', 'click', () => setupStep(0));
     on('#have-key', 'click', () => setupStep(2));
@@ -339,6 +383,14 @@ async function refresh() {
   const response = await request('GET_STATE');
   if (serial !== refreshSerial || connectingUI) return;
   state = response.state;
+  if (firstRefresh) {
+    replayIntro =
+      document.body.dataset.page === 'welcome' &&
+      state.keyConfigured &&
+      state.tutorialComplete &&
+      location.hash !== '#dashboard';
+    firstRefresh = false;
+  }
   platform = response.platform;
   shortcut = response.shortcut;
   currentNotice = response.notice;
@@ -349,14 +401,21 @@ async function refresh() {
     $('#notice-message').textContent = currentNotice.message;
   }
 
-  if (!state.keyConfigured || !state.tutorialComplete) {
+  if (!state.keyConfigured || !state.tutorialComplete || replayIntro) {
+    if (document.body.dataset.page !== 'welcome') {
+      if (isToolbarPopup) {
+        await request('OPEN_WELCOME');
+        window.close();
+      } else window.location.replace(chrome.runtime.getURL('welcome.html'));
+      return;
+    }
     $('#navigation').hidden = true;
     for (const id of ['home', 'history', 'settings']) $(`#${id}`).hidden = true;
     $('#onboarding').hidden = false;
 
-    if (!state.keyConfigured) {
+    if (!state.keyConfigured || replayIntro) {
       unmountTutorial();
-      renderOnboarding();
+      renderOnboarding(replayIntro ? 0 : state.onboardingStep);
     } else if (!tutorial) {
       setupRenderedStep = null;
       tutorial = mountTutorial($('#onboarding'), state, {
@@ -364,7 +423,9 @@ async function refresh() {
         refresh,
         reportError: showProblem,
         platform,
-        shortcut
+        shortcut,
+        tabId: currentTab?.id,
+        isToolbarPopup
       });
     } else {
       tutorial.updateShortcut(shortcut, platform);
@@ -375,6 +436,8 @@ async function refresh() {
     $('#navigation').hidden = false;
     renderDashboard();
     navigate(currentView, false);
+    if (document.body.dataset.page === 'welcome')
+      history.replaceState(null, '', '#dashboard');
   }
 }
 
@@ -401,11 +464,11 @@ function confirmAction(title, description, label, action) {
   dialog.showModal();
 }
 
+const currentTab = await chrome.tabs.getCurrent();
+const isToolbarPopup = chrome.extension.getViews({ type: 'popup' }).includes(window);
 decorateButtons();
-document.body.classList.toggle(
-  'window-mode',
-  !chrome.extension.getViews({ type: 'popup' }).includes(window)
-);
+document.body.classList.toggle('welcome-mode', document.body.dataset.page === 'welcome');
+document.body.classList.toggle('window-mode', !isToolbarPopup);
 document
   .querySelectorAll('[data-view]')
   .forEach((button) =>
@@ -464,6 +527,7 @@ on('#reset-all', 'click', () =>
     }
   )
 );
+on('#open-welcome', 'click', () => request('OPEN_WELCOME'));
 on('#shortcut-settings', 'click', () =>
   chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })
 );

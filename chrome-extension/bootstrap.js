@@ -1,4 +1,4 @@
-// Popup and welcome tab share one local interface, avoiding duplicate markup.
+// Load the bundled dashboard markup for toolbar and standalone popup views.
 // The only HTML parsed here is the extension's own bundled file.
 try {
   const response = await fetch(chrome.runtime.getURL('interface.html'));

@@ -1,4 +1,4 @@
-<!-- Shared, bundled UI. Never populated with remote HTML. -->
+<!-- Bundled dashboard UI. Never populated with remote HTML. -->
 <div class="app-shell">
   <header class="app-header">
     <a class="wordmark" href="#home" aria-label="Select Summary home"
@@ -21,7 +21,6 @@
   </nav>
   <main id="main">
     <div id="boot" class="empty"><p>Getting things ready…</p></div>
-    <section id="onboarding" hidden aria-labelledby="setup-title"></section>
     <section id="home" hidden aria-labelledby="home-title">
       <div class="hero">
         <h1 id="home-title">Ready for your first summary?</h1>
@@ -29,6 +28,10 @@
         <div class="connection-pill">
           <span class="status-dot"></span>API key saved
           <span class="local-note">History stays local</span>
+        </div>
+        <div class="local-rewards" id="local-rewards" hidden>
+          <span id="stat-xp">0 XP</span>
+          <span class="badge" id="first-milestone" hidden>First Summary</span>
         </div>
       </div>
       <div class="stats-grid" aria-label="Your reading activity">
@@ -198,98 +201,7 @@
   </form>
 </dialog>
 
-<!-- Static templates keep layout and copy readable, outside the event handlers. -->
-<template id="setup-welcome-template">
-  <h1 id="setup-title" class="visually-hidden">Set up Select Summary</h1>
-  <div
-    class="intro-animation"
-    role="img"
-    aria-label="Text is highlighted, then condensed into a short summary"
-  >
-    <div class="intro-document">
-      <span class="intro-line">Community gardens grow fresh food.</span>
-      <span class="intro-line">Neighbors share space and responsibility.</span>
-      <span class="intro-line">Plants provide shade and support wildlife.</span>
-      <span class="intro-line">Safe soil and care help them thrive.</span>
-      <div class="intro-highlight"></div>
-      <div class="intro-cursor"></div>
-    </div>
-    <div class="intro-summary">
-      <span>Summary</span>
-      <p>Community gardens improve city life with food, shade, and shared spaces.</p>
-    </div>
-  </div>
-  <p class="setup-subtitle intro-caption">Summarize text you highlight on a webpage.</p>
-  <button class="primary full-width" id="start-setup">Set up</button>
-</template>
-
-<template id="setup-instructions-template">
-  <h1 class="setup-heading" id="setup-title">Get your API key</h1>
-  <div
-    class="key-quest"
-    role="img"
-    aria-label="Three setup steps: open Google AI Studio, create an API key, then paste it here"
-  >
-    <div class="quest-scene quest-open">
-      <span class="quest-number">1</span><strong>Open Google AI Studio</strong>
-      <div class="quest-button">Get API key</div>
-    </div>
-    <div class="quest-scene quest-create">
-      <span class="quest-number">2</span><strong>Google AI Studio</strong>
-      <div class="quest-button">Create API key</div>
-    </div>
-    <div class="quest-scene quest-paste">
-      <span class="quest-number">3</span><strong>Back in Select Summary</strong>
-      <div class="quest-input">API key <span>••••••••••••</span></div>
-    </div>
-    <span class="quest-pointer" aria-hidden="true"></span>
-  </div>
-  <p class="free-key">
-    <strong>Google gives you a free Gemini API key with no credit card required.</strong>
-  </p>
-  <p class="small muted">
-    Where the free tier is available. Keep billing disabled; Google's eligibility rules
-    and quotas apply.
-  </p>
-  <ol class="instructions">
-    <li>
-      <div>
-        <strong
-          ><a
-            href="https://aistudio.google.com/apikey"
-            target="_blank"
-            rel="noopener noreferrer"
-            >Open Google AI Studio</a
-          ></strong
-        >
-        <span class="muted">Sign in with your Google account.</span>
-      </div>
-    </li>
-    <li>
-      <div>
-        <strong>Create or select a project</strong>
-        <span class="muted">Keep billing disabled to avoid API charges.</span>
-      </div>
-    </li>
-    <li>
-      <div>
-        <strong>Create and copy your API key</strong>
-        <span class="muted">Restrict it to the Gemini API.</span>
-      </div>
-    </li>
-  </ol>
-  <div class="setup-actions">
-    <button class="secondary" id="setup-back">Back</button>
-    <button class="primary" id="have-key">I have my key</button>
-  </div>
-</template>
-
-<template id="setup-key-template">
-  <h1 class="setup-heading" id="setup-title">Add your API key</h1>
-  <div id="setup-key-form"></div>
-  <button class="text-button" id="setup-back">Back</button>
-</template>
-
+<!-- Replacement-key form for Settings. -->
 <template id="key-form-template">
   <form class="key-form">
     <label for="new-key">Gemini API key</label>
@@ -317,7 +229,7 @@
       <span
         >I understand selected text goes to Google and may be used for product improvement
         or human review. My project's API terms and possible charges apply. Connecting
-        makes one validation request; each practice action sends the selected sample text.
+        makes one validation request; each summary sends the selected text.
         <a
           href="https://ai.google.dev/gemini-api/terms"
           target="_blank"
@@ -329,65 +241,4 @@
     <p class="form-status" role="status"></p>
     <button type="submit" class="primary full-width" disabled>Connect</button>
   </form>
-</template>
-
-<template id="tutorial-template">
-  <div class="connected-reward">
-    <span class="badge">AI Connected</span
-    ><span class="small muted">Step 2 · Try both methods</span>
-  </div>
-  <h1 class="setup-heading" id="setup-title">You're all set.</h1>
-  <div class="practice-steps" aria-label="Practice progress">
-    <span id="practice-context-step">1. Right-click</span>
-    <span id="practice-shortcut-step">2. Shortcut</span>
-  </div>
-  <h2 id="practice-title">Practice right-click</h2>
-  <p id="practice-instruction" class="small"></p>
-  <div id="shortcut-guide" class="shortcut-guide" hidden></div>
-  <div class="practice-area">
-    <p
-      id="practice-source"
-      class="practice-source"
-      tabindex="0"
-      aria-label="Practice paragraph"
-    ></p>
-    <div class="gesture-guide" aria-hidden="true">
-      <span class="gesture-pointer"></span
-      ><span class="gesture-menu">Summarize selection</span>
-    </div>
-    <div id="practice-menu" class="practice-menu" role="menu" hidden>
-      <button id="practice-summarize" role="menuitem">Summarize selection</button>
-    </div>
-  </div>
-  <p id="practice-status" class="small" role="status"></p>
-  <div id="practice-result" class="demo-summary" hidden>
-    <h2>Summary</h2>
-    <p id="practice-summary"></p>
-  </div>
-  <div id="practice-payoff" class="practice-payoff" hidden aria-live="polite"></div>
-  <div class="setup-actions">
-    <button id="practice-change-key" class="secondary">Change key</button
-    ><button id="practice-next" class="primary" disabled>Next</button>
-  </div>
-  <section id="pin-guide" hidden aria-labelledby="pin-title">
-    <h2 id="pin-title">Keep Select Summary handy</h2>
-    <div
-      class="pin-browser"
-      role="img"
-      aria-label="In Chrome's top-right toolbar, open Extensions and pin Select Summary"
-    >
-      <div class="pin-toolbar">
-        <span>Chrome</span><span class="extensions-shape"></span>
-      </div>
-      <div class="pin-menu">
-        <strong>Extensions</strong>
-        <div>Select Summary <span class="pin-shape"></span></div>
-      </div>
-      <span class="pin-arrow" aria-hidden="true"></span>
-    </div>
-    <p class="small">
-      Pin Select Summary to your toolbar so you can check your streak and history anytime.
-    </p>
-    <button id="finish-welcome" class="primary full-width">Go to dashboard</button>
-  </section>
 </template>

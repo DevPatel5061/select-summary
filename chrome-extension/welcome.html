@@ -4,10 +4,408 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Welcome to Select Summary</title>
-    <link rel="stylesheet" href="popup.css" />
-    <script type="module" src="bootstrap.js"></script>
+    <link rel="stylesheet" href="welcome.css" />
+    <script type="module" src="welcome.js"></script>
   </head>
-  <body data-page="welcome">
-    <p class="boot-message" role="status">Loading Select Summary…</p>
+  <body>
+    <header class="site-header">
+      <span class="wordmark">Select<span>Summary</span></span>
+      <span class="header-note">Your key. Local history. No extension tracking.</span>
+    </header>
+
+    <main class="welcome-layout" aria-busy="true" id="welcome-main">
+      <div class="progress-heading">
+        <p id="step-label">Step 1 of 3</p>
+        <span>YOUR SETUP</span>
+      </div>
+      <nav class="progress" aria-label="Setup progress">
+        <button class="step-tab" data-step="1" aria-current="step">
+          <span class="step-number">1</span><span>Connect</span>
+        </button>
+        <button class="step-tab" data-step="2" disabled>
+          <span class="step-number">2</span><span>Try it</span>
+        </button>
+        <button class="step-tab" data-step="3" disabled>
+          <span class="step-number">3</span><span>Make it a habit</span>
+        </button>
+      </nav>
+
+      <div id="boot" class="boot-message" role="status">Getting your setup ready…</div>
+      <p id="page-error" class="error-message" role="alert" hidden></p>
+
+      <section
+        class="wizard-card"
+        id="connect-step"
+        aria-labelledby="connect-title"
+        hidden
+      >
+        <div class="connect-layout">
+          <div class="connect-copy">
+            <span class="free-badge">100% Free — No Credit Card Required</span>
+            <h1 id="connect-title" tabindex="-1">Connect Gemini.</h1>
+            <p class="lead">One key to start summarizing.</p>
+            <p class="fine-print">
+              Use an eligible free-tier project with billing disabled. Google’s limits
+              apply.
+            </p>
+
+            <button id="open-studio" class="button secondary" data-icon="expand">
+              Open Google AI Studio
+            </button>
+            <ol class="instruction-list">
+              <li>
+                <button class="instruction active" data-guide="keys">
+                  <span>01</span
+                  ><span
+                    ><strong>Open AI Studio</strong
+                    ><small>Sign in with your Google account.</small></span
+                  >
+                </button>
+              </li>
+              <li>
+                <button class="instruction" data-guide="create">
+                  <span>02</span
+                  ><span
+                    ><strong>Create or copy your key</strong
+                    ><small>Choose a project without billing.</small></span
+                  >
+                </button>
+              </li>
+              <li>
+                <button class="instruction" data-guide="paste">
+                  <span>03</span
+                  ><span
+                    ><strong>Paste it here</strong
+                    ><small>Verify your key to continue.</small></span
+                  >
+                </button>
+              </li>
+            </ol>
+
+            <div id="verified-key" class="verified-key" hidden>
+              <div>
+                <strong>Gemini is connected.</strong>
+                <p id="saved-key-label"></p>
+              </div>
+              <button id="replace-key" class="text-button">Change key</button>
+            </div>
+
+            <form id="key-form">
+              <label for="api-key">Gemini API key</label>
+              <div class="key-input">
+                <input
+                  id="api-key"
+                  type="password"
+                  placeholder="Paste your API key"
+                  autocomplete="off"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  maxlength="256"
+                /><button
+                  id="reveal-key"
+                  class="icon-button"
+                  type="button"
+                  data-icon="eye"
+                  aria-label="Show entered key"
+                  aria-pressed="false"
+                ></button>
+              </div>
+              <p id="stored-key-hint" class="fine-print" hidden></p>
+              <label class="consent"
+                ><input id="google-consent" type="checkbox" /><span
+                  >I agree to send the connection check and selected text to Google.
+                  Free-tier content may be used for product improvement. Google’s
+                  <a
+                    href="https://ai.google.dev/gemini-api/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >data terms</a
+                  >
+                  and possible API charges apply.</span
+                ></label
+              >
+              <p id="key-status" class="form-message" role="status"></p>
+              <button
+                id="verify-key"
+                class="button primary full-width"
+                type="submit"
+                disabled
+              >
+                Verify &amp; Save Key
+              </button>
+            </form>
+            <button
+              id="continue-connect"
+              class="button primary full-width"
+              data-icon="arrow"
+              hidden
+            >
+              Continue
+            </button>
+          </div>
+
+          <div class="guide-column">
+            <div class="visual-heading">
+              <span>Follow along in Google AI Studio</span
+              ><button
+                id="guide-replay"
+                class="icon-button"
+                data-icon="arrow"
+                aria-label="Replay API key walkthrough"
+                title="Replay walkthrough"
+              ></button>
+            </div>
+            <div
+              class="studio-guide"
+              id="studio-guide"
+              role="img"
+              aria-label="Illustrated AI Studio API Keys page, create-key dialog, and copy action"
+            >
+              <div class="browser-toolbar">
+                <span class="browser-dots" aria-hidden="true"><i></i><i></i><i></i></span
+                ><span class="browser-address" id="studio-address"
+                  >aistudio.google.com/api-keys</span
+                >
+              </div>
+              <div class="studio-view" aria-hidden="true">
+                <aside class="studio-sidebar">
+                  <strong>Google AI Studio</strong><span>‹ &nbsp;Dashboard</span
+                  ><small>PROJECT</small><span class="studio-active">API Keys</span
+                  ><span>Projects</span><small>USAGE &amp; BILLING</small
+                  ><span>Usage</span><span>Rate Limit</span><span>Spend</span
+                  ><span>Billing</span><small>OBSERVE</small
+                  ><span>Logs and Datasets</span>
+                </aside>
+                <div class="studio-content">
+                  <div class="studio-title">
+                    <h2>API Keys</h2>
+                    <button id="mock-create" class="studio-button" tabindex="-1">
+                      Create API key
+                    </button>
+                  </div>
+                  <div class="studio-filters">
+                    <span>Group by &nbsp;<b>• API Key</b> &nbsp; Project</span
+                    ><span>All projects &nbsp;⌄</span>
+                  </div>
+                  <div class="studio-table">
+                    <div class="studio-table-heading">
+                      <span>Key</span><span>Project</span><span>Billing Tier</span>
+                    </div>
+                    <div>
+                      <span class="studio-key">••••••••</span
+                      ><span>Default Gemini Project</span><span>Free tier</span>
+                    </div>
+                    <div>
+                      <span class="studio-key">••••••••</span><span>Select Summary</span
+                      ><span>Free tier</span>
+                    </div>
+                  </div>
+                  <p class="studio-hint">Can’t find your API keys here?</p>
+                  <span class="studio-import">Import projects</span>
+                </div>
+              </div>
+              <div class="studio-overlay" id="create-overlay" aria-hidden="true" hidden>
+                <div class="studio-dialog">
+                  <h3>Create a new key</h3>
+                  <span class="mock-label">Name your key</span>
+                  <div class="mock-field" id="mock-name">Select Summary</div>
+                  <span class="mock-label">Choose an imported project</span
+                  ><button id="mock-project" class="mock-field" tabindex="-1">
+                    Default Gemini Project <span>⌄</span>
+                  </button>
+                  <div class="mock-dialog-actions">
+                    <span>Cancel</span
+                    ><button id="mock-create-confirm" class="studio-button" tabindex="-1">
+                      Create key
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="studio-overlay" id="copy-overlay" aria-hidden="true" hidden>
+                <div class="studio-dialog">
+                  <h3>Your API key</h3>
+                  <p class="mock-description">Select Summary · Default Gemini Project</p>
+                  <div class="mock-key-row">
+                    <code>••••••••••••••••••••••••</code
+                    ><button
+                      id="mock-copy"
+                      class="studio-button"
+                      tabindex="-1"
+                      data-icon="copy"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p class="mock-description">Keep your API key private.</p>
+                </div>
+              </div>
+              <div class="paste-scene" id="paste-scene" aria-hidden="true" hidden>
+                <span class="wordmark">Select<span>Summary</span></span>
+                <h3>Add your API key</h3>
+                <span class="mock-label">Gemini API key</span>
+                <div class="mock-field" id="mock-paste">
+                  <span id="mock-paste-value"></span><span class="typing-caret"></span>
+                </div>
+                <div class="mock-connect">Verify &amp; Save Key</div>
+              </div>
+              <div class="animated-cursor" id="studio-cursor" aria-hidden="true"></div>
+            </div>
+            <p class="visual-caption" id="guide-caption" aria-live="polite">
+              Open the API Keys page. Your Google account stays in Google.
+            </p>
+            <p class="illustration-note">
+              Interactive illustration. No account recording or real keys.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="wizard-card sandbox-step"
+        id="sandbox-step"
+        aria-labelledby="sandbox-title"
+        hidden
+      >
+        <div class="section-header">
+          <div>
+            <h1 id="sandbox-title" tabindex="-1">Make your first summary.</h1>
+            <p class="lead">
+              Highlight a few sentences. Choose Summarize, or use your shortcut.
+            </p>
+          </div>
+          <button id="watch-demo" class="button secondary" data-icon="arrow">
+            Watch demo
+          </button>
+        </div>
+        <div class="sandbox-tools">
+          <span id="demo-label">Your live sandbox</span>
+          <div
+            class="shortcut-keys"
+            id="shortcut-keys"
+            aria-label="Your summarization shortcut"
+          ></div>
+        </div>
+        <div class="article-browser" id="article-browser">
+          <div class="browser-toolbar">
+            <span class="browser-dots" aria-hidden="true"><i></i><i></i><i></i></span
+            ><span class="browser-address">Practice article</span
+            ><span class="reader-label">READING VIEW</span>
+          </div>
+          <article class="sample-article">
+            <p class="article-category">CITY LIFE</p>
+            <h2>A little green changes a city.</h2>
+            <p class="article-byline">1 minute read &nbsp;·&nbsp; Sample article</p>
+            <p
+              id="sample-text"
+              tabindex="0"
+              aria-label="Sample article text. Select text to summarize."
+            ></p>
+          </article>
+          <button id="quick-pill" class="quick-pill" data-icon="arrow" hidden>
+            Summarize
+          </button>
+          <div id="selection-menu" class="selection-menu" role="menu" hidden>
+            <span class="menu-copy" aria-hidden="true">Copy</span
+            ><button id="menu-summarize" role="menuitem">Summarize selection</button>
+          </div>
+          <div
+            id="article-cursor"
+            class="animated-cursor"
+            aria-hidden="true"
+            hidden
+          ></div>
+        </div>
+        <div class="sandbox-bottom">
+          <p class="fine-print">
+            On webpages, use right-click → Summarize selection or your shortcut. This
+            quick-action pill is for practice here.
+          </p>
+          <button id="show-summary" class="text-button" hidden>Show summary again</button>
+        </div>
+        <p id="sandbox-status" class="form-message" role="status"></p>
+        <div id="summary-reward" class="summary-reward" role="status" hidden>
+          <div>
+            <span class="reward-value" id="reward-xp">+50 XP</span
+            ><span class="reward-label">Summary earned</span>
+          </div>
+          <div>
+            <span class="reward-value" id="reward-streak">1-day streak</span
+            ><span class="reward-label">Your reading habit</span>
+          </div>
+          <div>
+            <span class="milestone-label" id="reward-badge">First Summary</span
+            ><span class="reward-label" id="reward-badge-note">Milestone unlocked</span>
+          </div>
+        </div>
+        <div class="wizard-actions">
+          <button class="button secondary" id="back-connect">Back</button
+          ><button
+            class="button primary"
+            id="continue-sandbox"
+            data-icon="arrow"
+            disabled
+          >
+            Continue
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="wizard-card pin-step"
+        id="pin-step"
+        aria-labelledby="pin-title"
+        hidden
+      >
+        <div class="pin-copy">
+          <span class="complete-label">READY WHEN YOU ARE</span>
+          <h1 id="pin-title" tabindex="-1">Keep it within reach.</h1>
+          <p class="lead">Pin Select Summary to your toolbar.</p>
+          <p class="muted">
+            Your streak, milestones, and summary history will be one click away.
+          </p>
+        </div>
+        <div
+          class="pin-illustration"
+          role="img"
+          aria-label="Open Chrome’s Extensions menu in the top-right toolbar, then click the pin next to Select Summary"
+        >
+          <div class="browser-toolbar pin-toolbar">
+            <span class="browser-address">Chrome toolbar</span
+            ><span class="extensions-shape" aria-hidden="true"></span
+            ><span class="chrome-avatar" aria-hidden="true"></span
+            ><span class="chrome-menu" aria-hidden="true">⋮</span>
+          </div>
+          <div class="extensions-menu">
+            <h3>Extensions</h3>
+            <p>Full access</p>
+            <div class="extension-row">
+              <img src="icon/icon.png" alt="" width="28" height="28" /><span
+                >Select Summary</span
+              ><button
+                class="pin-example"
+                type="button"
+                aria-label="Illustrated pin button"
+              >
+                <span class="pin-shape" aria-hidden="true"></span></button
+              ><span aria-hidden="true">⋮</span>
+            </div>
+          </div>
+          <span class="pin-callout callout-one">1 <span>Open Extensions</span></span
+          ><span class="pin-callout callout-two">2 <span>Click the pin</span></span>
+        </div>
+        <p id="pin-status" class="fine-print">
+          In Chrome’s top-right corner, open Extensions, then pin Select Summary.
+        </p>
+        <button
+          id="finish-welcome"
+          class="button primary finish-button"
+          data-icon="arrow"
+        >
+          Start Browsing &amp; Earning Streaks
+        </button>
+        <button id="back-sandbox" class="text-button">Back</button>
+      </section>
+    </main>
+    <div id="confetti" class="confetti" aria-hidden="true" hidden></div>
   </body>
 </html>

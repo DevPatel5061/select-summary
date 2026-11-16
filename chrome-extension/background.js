@@ -72,7 +72,10 @@ async function showCard(tabId, payload) {
     /* A fresh page needs its content script. */
   }
   try {
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['summary-card.js', 'content.js']
+    });
     await chrome.tabs.sendMessage(tabId, message);
     return true;
   } catch {
@@ -154,21 +157,6 @@ chrome.commands.onCommand.addListener(async (command) => {
   if (!tab?.id) return;
   if (await routePractice('PRACTICE_SHORTCUT', tab)) return;
 
-  // Also support a toolbar popup still showing practice, even though its active
-  // browser tab is the webpage behind it. Only the popup target may respond.
-  try {
-    const contexts = await chrome.runtime.getContexts({ contextTypes: ['POPUP'] });
-    if (contexts.length) {
-      const response = await chrome.runtime.sendMessage({
-        type: 'PRACTICE_SHORTCUT',
-        targetPopup: true
-      });
-      if (response?.handled) return;
-    }
-  } catch {
-    /* Continue with a normal webpage selection. */
-  }
-
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -202,44 +190,60 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-async function runPractice(message) {
-  const method = message.method;
-  const expected = method === 'context' ? 0 : method === 'shortcut' ? 1 : -1;
+async function runSandbox(message) {
+  if (!['pill', 'shortcut', 'context'].includes(message.method))
+    throw new AppError('SANDBOX', 'Choose a sandbox summarization action.');
   const source = validateSelection(message.selection);
   const normalize = (value) => value.replace(/\s+/g, ' ').trim();
   if (!normalize(SAMPLE_TEXT).includes(normalize(source)))
-    throw new AppError('PRACTICE', 'Highlight text inside the practice paragraph.');
+    throw new AppError('SANDBOX', 'Highlight text inside the sample article.');
   const state = await store.read();
-  if (!state.key || expected < 0 || state.tutorialStep !== expected)
-    throw new AppError('PRACTICE', 'Complete right-click first, then the shortcut.');
-  const requestId = `${state.credentialRevision}:${method}`;
-  if (activePractice.has(requestId))
-    throw new AppError('BUSY', 'This practice summary is already running.');
-  activePractice.add(requestId);
+  if (!state.key || !state.keyValidated)
+    throw new AppError('NO_KEY', 'Verify your Gemini key first.');
+  if (
+    typeof message.requestId !== 'string' ||
+    !/^[a-zA-Z0-9-]{16,64}$/.test(message.requestId)
+  )
+    throw new AppError('MESSAGE', 'Invalid summary request.');
+  const cached = state.history.find((item) => item.id === message.requestId);
+  if (cached)
+    return {
+      summary: cached.text,
+      stats: activityStats(state.activity),
+      xp: activityStats(state.activity).total * 50,
+      firstMilestone: false
+    };
+  // One in-flight sandbox action per credential, including overlapping pill
+  // clicks and native shortcut events. Recent request IDs are deduplicated
+  // against the bounded history without retaining an extra request log.
+  const activeKey = String(state.credentialRevision);
+  if (activePractice.has(activeKey))
+    throw new AppError('BUSY', 'Your summary is already on its way.');
+  activePractice.add(activeKey);
   try {
     const summary = await summarize(source, state.key);
+    let firstMilestone = false;
     const updated = await store.update((current) => {
-      if (
-        current.credentialRevision !== state.credentialRevision ||
-        current.tutorialStep !== expected
-      )
-        throw new AppError('CANCELLED', 'Settings changed. Please try again.');
+      if (current.credentialRevision !== state.credentialRevision)
+        throw new AppError('CANCELLED', 'Your key changed. Try again.');
+      if (current.history.some((item) => item.id === message.requestId)) return current;
+      firstMilestone = !current.milestones.firstSummary;
       const next = addSummary(
         current,
         summary,
         wordCount(source),
         Date.now(),
-        crypto.randomUUID()
+        message.requestId
       );
-      return { ...next, tutorialStep: expected + 1 };
+      return {
+        ...next,
+        onboarding: { ...next.onboarding, step: 3, sandboxComplete: true }
+      };
     });
-    return {
-      summary,
-      stats: activityStats(updated.activity),
-      wordsSaved: Math.max(0, wordCount(source) - wordCount(summary))
-    };
+    const stats = activityStats(updated.activity);
+    return { summary, stats, xp: stats.total * 50, firstMilestone };
   } finally {
-    activePractice.delete(requestId);
+    activePractice.delete(activeKey);
   }
 }
 
@@ -264,50 +268,54 @@ async function appRequest(message) {
             : session.notice || null
       };
     }
-    case 'RESTART_TUTORIAL':
-      await store.update((state) => {
-        if (!state.key) throw new AppError('NO_KEY', 'Connect a Gemini key first.');
-        return { ...state, tutorialStep: 0, tutorialComplete: false };
-      });
-      return {};
     case 'OPEN_WELCOME':
       await openWelcome();
       return {};
-    case 'SET_ONBOARDING':
-      if (!Number.isInteger(message.step) || message.step < 0 || message.step > 2)
-        throw new AppError('MESSAGE', 'Invalid setup step.');
-      await store.update((state) => ({ ...state, onboardingStep: message.step }));
+    case 'SET_WELCOME_STEP':
+      if (![1, 2, 3].includes(message.step))
+        throw new AppError('MESSAGE', 'Invalid welcome step.');
+      await store.update((state) => {
+        if (message.step >= 2 && !state.keyValidated)
+          throw new AppError('NO_KEY', 'Verify your Gemini key first.');
+        if (message.step === 3 && !state.onboarding.sandboxComplete)
+          throw new AppError('SANDBOX', 'Generate a live summary first.');
+        return { ...state, onboarding: { ...state.onboarding, step: message.step } };
+      });
       return {};
     case 'CONNECT_KEY': {
       if (connecting)
         throw new AppError('BUSY', 'A connection check is already running.');
-      if (
-        typeof message.key !== 'string' ||
-        !message.key.trim() ||
-        message.key.length > 256 ||
-        /\s/.test(message.key.trim())
-      )
-        throw new AppError('KEY', 'Paste a complete API key without spaces.');
-      if (message.consent !== true)
-        throw new AppError(
-          'CONSENT',
-          'Accept the Google API data notice before connecting.'
-        );
+      // Reserve the connection slot before reading storage, so two welcome
+      // tabs cannot both validate while waiting for the same queued read.
       connecting = true;
       const epoch = credentialEpoch;
       try {
-        await validateApiKey(message.key.trim());
+        const current = await store.read();
+        const key = message.useStoredKey === true ? current.key : message.key;
+        if (
+          typeof key !== 'string' ||
+          !key.trim() ||
+          key.length > 256 ||
+          /\s/.test(key.trim())
+        )
+          throw new AppError('KEY', 'Paste a complete API key without spaces.');
+        if (message.consent !== true)
+          throw new AppError(
+            'CONSENT',
+            'Accept the Google API data notice before connecting.'
+          );
+        if (epoch !== credentialEpoch)
+          throw new AppError('CANCELLED', 'Settings changed. Please connect again.');
+        await validateApiKey(key.trim());
         await store.update((state) => {
           if (epoch !== credentialEpoch)
             throw new AppError('CANCELLED', 'Settings changed. Please connect again.');
           return {
             ...state,
-            key: message.key.trim(),
+            key: key.trim(),
             keyValidated: true,
             credentialRevision: state.credentialRevision + 1,
-            onboardingStep: 2,
-            tutorialStep: state.key ? (state.tutorialStep ?? 2) : 0,
-            tutorialComplete: state.key ? (state.tutorialComplete ?? true) : false
+            onboarding: { ...state.onboarding, step: 2 }
           };
         });
         return {};
@@ -315,13 +323,16 @@ async function appRequest(message) {
         connecting = false;
       }
     }
-    case 'COMPLETE_TUTORIAL_STEP':
-      return runPractice(message);
-    case 'FINISH_TUTORIAL':
+    case 'SUMMARIZE_SANDBOX':
+      return runSandbox(message);
+    case 'FINISH_WELCOME':
       await store.update((state) => {
-        if (!state.key || state.tutorialStep !== 2)
-          throw new AppError('PRACTICE', 'Complete both practice steps first.');
-        return { ...state, tutorialComplete: true };
+        if (!state.keyValidated || !state.onboarding.sandboxComplete)
+          throw new AppError('SANDBOX', 'Generate a live summary first.');
+        return {
+          ...state,
+          onboarding: { ...state.onboarding, step: 3, completed: true }
+        };
       });
       return {};
     case 'CLEAR_HISTORY':
@@ -334,9 +345,7 @@ async function appRequest(message) {
         key: null,
         keyValidated: false,
         credentialRevision: state.credentialRevision + 1,
-        onboardingStep: 0,
-        tutorialStep: 0,
-        tutorialComplete: false
+        onboarding: { version: 1, step: 1, completed: false, sandboxComplete: false }
       }));
       return {};
     case 'RESET_ALL':

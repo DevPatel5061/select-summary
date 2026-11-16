@@ -2,14 +2,16 @@
 
 A lightweight Chrome extension that summarizes highlighted text with Gemini. Bring your own API key, keep your history and activity locally, and get a concise 15–30 word summary.
 
-Version **3.1.0** is available in this source branch. The [Chrome Web Store listing](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd) may contain an earlier release until a new package is published.
+Version **3.2.0** is available in this source branch. The [Chrome Web Store listing](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd) may contain an earlier release until a new package is published.
+
+This release adds a full-page three-step welcome wizard, manual key verification, an interactive selection sandbox, and persistent First Summary rewards.
 
 ## Install
 
 1. Download this repository as a ZIP and extract it, or clone it:
 
    ```sh
-   git clone https://github.com/DevPatel5061/select-summary.git
+   git clone --branch feat/modern-extension-experience https://github.com/DevPatel5061/select-summary.git
    ```
 
 2. Open `chrome://extensions` and enable **Developer mode**.
@@ -22,23 +24,21 @@ Reloading or updating the extension does not automatically open another welcome 
 
 ## Set up
 
-1. The opening animation shows selected text becoming a summary. Choose **Set up**.
-2. Follow the looping, five-second local setup illustration and open [Google AI Studio](https://aistudio.google.com/apikey).
-3. Create a key for a project without billing enabled. Google's free tier does not require a credit card, but eligibility, regional availability, project verification, and quotas apply. See [Google's billing guide](https://ai.google.dev/gemini-api/docs/billing).
-4. Paste the key and accept the Google data notice. Paste starts one automatic connection check **after consent**; you can also choose **Connect**. A failed check does not replace an existing key or retry automatically.
-5. A successful check saves the key, awards **AI Connected**, and opens the practice paragraph.
-6. Complete **right-click** first, then your actual assigned **keyboard shortcut**. Both actions generate a real Gemini summary inside the welcome page. Each success earns 50 XP and updates local activity immediately.
-7. Review the toolbar pinning guide and choose **Go to dashboard**.
+1. **Connect:** Open [Google AI Studio](https://aistudio.google.com/apikey) from the welcome page. Its three-part illustration shows where to create or copy a key and paste it back.
+2. Use an eligible free-tier project **without billing enabled**. Google's free tier does not require a credit card, but regional availability, project verification, and quotas apply. See [Google's billing guide](https://ai.google.dev/gemini-api/docs/billing).
+3. Paste your key, accept the Google data notice, then press **Verify & Save Key**. Only this explicit action sends a small validation request. A failed check stays inline and preserves an existing key.
+4. **Try it:** Highlight the sample paragraph and click the floating **Summarize** pill, or press your displayed shortcut. The real result appears inside the sample browser using the same card as webpage summaries. One successful summary unlocks the next step, awards **50 XP**, updates your actual streak, and saves the **First Summary** milestone.
+5. **Make it a habit:** Follow the toolbar pinning diagram, then choose **Start Browsing & Earning Streaks**. The welcome tab closes; if it is the window's only tab, it opens a new tab page instead.
 
-The visual setup guide is a bundled illustration, not a recording of a Google account. No account screenshots, remote fonts, analytics, or third-party image services are loaded.
+The selection pill is limited to the welcome sandbox. On regular webpages, use the context menu or shortcut. **Watch demo** previews word-by-word selection and a summary without making an API request or changing stats. The AI Studio illustration is bundled HTML/CSS, not a recording of a Google account. No account screenshots, remote fonts, analytics, or third-party image services are loaded.
 
 ## Use
 
 Highlight webpage text, right-click, and choose **Summarize selection**. Or use the registered shortcut:
 
-| Action | Default |
-| --- | --- |
-| Open the extension | `Alt+G` |
+| Action              | Default       |
+| ------------------- | ------------- |
+| Open the extension  | `Alt+G`       |
 | Summarize selection | `Alt+Shift+S` |
 
 On Mac, Alt is **Option**. The welcome page reads your actual shortcut and shows the appropriate key labels and Mac symbols. Change assignments at `chrome://extensions/shortcuts`; unassigned or conflicting shortcuts need to be configured there. `Ctrl/Command+Z` is never the new default. Old installations may retain a previous assignment until changed manually.
@@ -49,9 +49,9 @@ Selections are limited to 50,000 characters. Browser settings, extension stores,
 
 ## Local history and activity
 
-The latest ten summaries are stored locally. Daily aggregates retain summary counts, estimated time saved, streaks, and personal bests after older history is pruned. Both successful practice summaries count; the connection check does not.
+The latest ten summaries are stored locally. Daily aggregates retain summary counts, estimated time saved, streaks, and personal bests after older history is pruned. Every successful live sandbox or webpage summary counts; validation and demo playback do not. The First Summary milestone persists even after clearing history.
 
-Time saved estimates the positive difference between source and summary reading time at **225 words per minute**. Streaks use the local calendar. XP is 50 per successful summary; the reader level increases every ten summaries. These are local counters, not developer analytics.
+Time saved estimates the positive difference between source and summary reading time at **225 words per minute**. Streaks use the local calendar. XP is 50 per successful summary. The overview shows your XP and earned First Summary badge. These are local counters, not developer analytics.
 
 **Clear history** preserves aggregates. **Remove key** disconnects the key while preserving history. **Reset all local data** removes the key, history, activity, and setup progress. Removing a key locally does not revoke it at Google.
 
@@ -67,15 +67,15 @@ Read [Privacy and data handling](PRIVACY.md), [Google's API terms](https://ai.go
 
 The repository contains the active extension and its installation, privacy, and license documents. Development test suites, package manifests, dependencies, reports, and screenshots have been removed.
 
-| Component | Responsibility |
-| --- | --- |
-| `welcome.html`, `popup.html` | Local page entry points |
-| `bootstrap.js`, `interface.html` | Shared bundled markup without duplicate screens |
-| `popup.js`, `tutorial.js` | Setup, dashboard, and inline practice interactions |
-| `background.js` | Validated requests, native command routing, Gemini calls, and persistence |
-| `gemini.js` | Provider authentication, timeouts, safe errors, and concise output |
-| `core.js`, `storage.js` | Local data migration, calendar activity, and serialized writes |
-| `content.js`, `summary.css` | Isolated in-page result card |
+| Component                                                               | Responsibility                                                            |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `welcome.html`, `welcome.css`, `welcome.js`                             | Three-step onboarding, manual key setup, sandbox, and pin guide           |
+| `popup.html`, `bootstrap.js`, `interface.html`, `popup.js`, `popup.css` | Toolbar and standalone dashboard, history, and settings                   |
+| `background.js`                                                         | Validated requests, native command routing, Gemini calls, and persistence |
+| `gemini.js`                                                             | Provider authentication, timeouts, safe errors, and concise output        |
+| `core.js`, `storage.js`                                                 | Local data migration, calendar activity, and serialized writes            |
+| `summary-card.js`, `summary.css`                                        | Shared, isolated summary card used by webpages and the sandbox            |
+| `content.js`                                                            | Validated webpage message listener and card lifecycle                     |
 
 The runtime has no third-party dependencies. Source files use multiline formatting and comments around the selection, message-routing, storage, and timing behavior.
 
@@ -87,11 +87,11 @@ The model is `gemini-3.5-flash-lite`, centralized in `core.js`. Each summary mak
 
 - **Key check fails:** verify the complete key, Gemini access, restrictions, project eligibility, and region in AI Studio. Retry explicitly or paste a replacement.
 - **Quota exhausted:** check the project's limits and wait for reset. The extension never enables billing.
-- **Practice right-click:** highlight the paragraph before opening the menu. Keyboard users can focus the paragraph, press Ctrl/Command+A, then Shift+F10.
-- **Practice shortcut:** finish right-click first, highlight again, and press the displayed keys together. Results stay inside the welcome page.
+- **Sandbox:** highlight the sample text and choose its floating Summarize pill. Right-click is also supported; keyboard users can focus the paragraph, press Ctrl/Command+A, then Shift+F10.
+- **Shortcut:** highlight text and press the displayed keys together. A sandbox result stays inside the welcome page. Either the pill or shortcut is enough to continue.
 - **No card:** open History; protected pages can block injection.
 - **Source changes:** reload the extension, refresh webpages, then open the welcome guide if needed. A browser restart may be needed to replace an older shortcut assignment.
 
 ## License
 
-The project retains its [GNU GPL v3 license](LICENSE). Original SVG button artwork in `icons.js` and `content.js` is dedicated under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). SVGs are used only inside buttons. The existing raster extension icon is retained.
+The project retains its [GNU GPL v3 license](LICENSE). Original SVG button artwork in `icons.js` and `summary-card.js` is dedicated under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). SVGs are used only inside buttons. The existing raster extension icon is retained.

@@ -1,4 +1,4 @@
-export const VERSION = 3;
+export const VERSION = 4;
 export const HISTORY_LIMIT = 10;
 export const MAX_INPUT_LENGTH = 50_000;
 export const MODEL = 'gemini-3.5-flash-lite';
@@ -50,18 +50,40 @@ export function initialState() {
     credentialRevision: 0,
     history: [],
     activity: {},
-    onboardingStep: 0,
-    tutorialStep: 0,
-    tutorialComplete: false
+    onboarding: { version: 1, step: 1, completed: false, sandboxComplete: false },
+    milestones: { firstSummary: false }
   };
 }
 
 export function migrateState(data) {
   if (data.appState?.version === VERSION) return data.appState;
+  if (data.appState) {
+    if (data.appState.version !== 3)
+      throw new AppError(
+        'VERSION',
+        'This local data needs a compatible extension version.'
+      );
+    const { onboardingStep, tutorialStep, tutorialComplete, ...previous } = data.appState;
+    const hasActivity = activityStats(previous.activity || {}).total > 0;
+    const sandboxComplete = Boolean(tutorialStep >= 1 && hasActivity);
+    return {
+      ...initialState(),
+      ...previous,
+      version: VERSION,
+      onboarding: {
+        version: 1,
+        step: !previous.keyValidated ? 1 : sandboxComplete ? 3 : 2,
+        completed: Boolean(tutorialComplete && previous.key),
+        sandboxComplete
+      },
+      milestones: { firstSummary: hasActivity }
+    };
+  }
   const state = initialState();
   state.key =
     typeof data.geminiApiKey === 'string' ? data.geminiApiKey.trim() || null : null;
-  state.tutorialComplete = Boolean(state.key);
+  // Preserve completed legacy installations without inventing historical XP.
+  state.onboarding.completed = Boolean(state.key);
   state.history = (Array.isArray(data.summaries) ? data.summaries : [])
     .flatMap((entry, index) => {
       const text = typeof entry === 'string' ? entry : entry?.text;
@@ -93,6 +115,7 @@ export function addSummary(state, text, sourceWords, timestamp, id) {
   return {
     ...state,
     keyValidated: true,
+    milestones: { ...state.milestones, firstSummary: true },
     history: [{ id, text, timestamp, sourceWords, summaryWords }, ...state.history].slice(
       0,
       HISTORY_LIMIT
@@ -159,9 +182,9 @@ export function publicState(state) {
     keySuffix: state.key?.slice(-4) || '',
     history: state.history,
     activity: state.activity,
-    onboardingStep: state.onboardingStep,
-    tutorialStep: state.tutorialStep ?? 0,
-    tutorialComplete: state.tutorialComplete ?? Boolean(state.key)
+    onboarding: state.onboarding,
+    milestones: state.milestones,
+    xp: activityStats(state.activity).total * 50
   };
 }
 

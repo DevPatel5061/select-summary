@@ -1,6 +1,5 @@
 import { activityStats, dashboardMessage, dayKey, shiftDay } from './core.js';
 import { decorateButtons, icon } from './icons.js';
-import { mountTutorial } from './tutorial.js';
 import { shortcutKeys } from './shortcuts.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -8,12 +7,8 @@ let state;
 let currentView = 'home';
 let currentNotice;
 let connectingUI = false;
-let tutorial = null;
-let firstRefresh = true;
-let replayIntro = false;
 let platform = 'unknown';
 let shortcut = '';
-let setupRenderedStep = null;
 let refreshSerial = 0;
 let toastTimer;
 let lastTotal;
@@ -73,7 +68,6 @@ function navigate(view, focus = true) {
   currentView = ['home', 'history', 'settings'].includes(view) ? view : 'home';
   for (const id of ['home', 'history', 'settings'])
     $(`#${id}`).hidden = id !== currentView;
-  $('#onboarding').hidden = true;
   document.querySelectorAll('[data-view]').forEach((button) => {
     if (button.dataset.view === currentView) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
@@ -185,6 +179,9 @@ function renderDashboard() {
     `Open: ${platform === 'mac' ? 'Option' : 'Alt'} + G. Summarize: ${keys.length ? keys.join(' + ') : 'Unassigned'}.`;
   $('#stat-total').textContent = stats.total.toLocaleString();
   $('#stat-today').textContent = `${stats.today} today`;
+  $('#local-rewards').hidden = !stats.total && !state.milestones.firstSummary;
+  $('#stat-xp').textContent = `${state.xp.toLocaleString()} XP`;
+  $('#first-milestone').hidden = !state.milestones.firstSummary;
   $('#stat-time').textContent = timeLabel(stats.secondsSaved);
   $('#stat-streak').replaceChildren(
     document.createTextNode(String(stats.currentStreak)),
@@ -230,18 +227,6 @@ function renderDashboard() {
 
 // Templates contain only bundled HTML. Keys and generated text are assigned
 // through DOM properties, never interpolated into markup.
-function celebrateConnection() {
-  const layer = element('div', 'connection-confetti');
-  layer.setAttribute('aria-hidden', 'true');
-  for (let index = 0; index < 18; index++) {
-    const piece = element('i');
-    piece.style.setProperty('--piece', index);
-    layer.append(piece);
-  }
-  document.body.append(layer);
-  setTimeout(() => layer.remove(), 1600);
-}
-
 function createKeyForm(container, replacement = false) {
   container.replaceChildren($('#key-form-template').content.cloneNode(true));
   const form = container.querySelector('form');
@@ -250,27 +235,12 @@ function createKeyForm(container, replacement = false) {
   const submit = container.querySelector('button[type=submit]');
   const reveal = container.querySelector('button[type=button]');
   const status = container.querySelector('.form-status');
-  let pasted = false;
-  let autoTimer;
-  let lastAttempt = '';
 
   function updateSubmit() {
     submit.disabled = connectingUI || !consent.checked || !input.value.trim();
   }
-  // Pasting only schedules a check after consent. Typing never makes a request
-  // per keystroke, and a failed auto-check is not silently retried.
-  function scheduleValidation() {
-    clearTimeout(autoTimer);
-    updateSubmit();
-    if (pasted && !submit.disabled && input.value.trim() !== lastAttempt) {
-      autoTimer = setTimeout(() => form.requestSubmit(), 450);
-    }
-  }
-  input.addEventListener('paste', () => {
-    pasted = true;
-  });
-  input.addEventListener('input', scheduleValidation);
-  consent.addEventListener('change', scheduleValidation);
+  input.addEventListener('input', updateSubmit);
+  consent.addEventListener('change', updateSubmit);
   reveal.addEventListener('click', () => {
     const visible = input.type === 'password';
     input.type = visible ? 'text' : 'password';
@@ -282,7 +252,6 @@ function createKeyForm(container, replacement = false) {
   if (replacement) {
     cancel = element('button', 'secondary', 'Cancel');
     cancel.addEventListener('click', () => {
-      clearTimeout(autoTimer);
       container.replaceChildren();
       container.hidden = true;
       $('#replace-key').hidden = false;
@@ -293,9 +262,6 @@ function createKeyForm(container, replacement = false) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submit.disabled || connectingUI) return;
-    clearTimeout(autoTimer);
-    lastAttempt = input.value.trim();
-    pasted = false;
     connectingUI = true;
     input.readOnly = true;
     consent.disabled = true;
@@ -303,7 +269,7 @@ function createKeyForm(container, replacement = false) {
     updateSubmit();
     status.textContent = 'Checking Gemini…';
     try {
-      await request('CONNECT_KEY', { key: lastAttempt, consent: consent.checked });
+      await request('CONNECT_KEY', { key: input.value.trim(), consent: consent.checked });
       input.value = '';
       container.replaceChildren();
       if (replacement) {
@@ -311,10 +277,8 @@ function createKeyForm(container, replacement = false) {
         $('#replace-key').hidden = false;
         toast('AI Connected');
       }
-      setupRenderedStep = null;
       connectingUI = false;
       await refresh();
-      celebrateConnection();
     } catch (error) {
       status.textContent = error.message;
       status.setAttribute('role', 'alert');
@@ -331,66 +295,11 @@ function createKeyForm(container, replacement = false) {
   updateSubmit();
 }
 
-async function setupStep(step) {
-  await request('SET_ONBOARDING', { step });
-  state.onboardingStep = step;
-  setupRenderedStep = null;
-  renderOnboarding();
-}
-
-function renderOnboarding(step = state.onboardingStep) {
-  const container = $('#onboarding');
-  container.hidden = false;
-  if (setupRenderedStep === step) return;
-  setupRenderedStep = step;
-
-  const template = [
-    '#setup-welcome-template',
-    '#setup-instructions-template',
-    '#setup-key-template'
-  ][step];
-  container.replaceChildren($(template).content.cloneNode(true));
-  if (step === 0) {
-    on('#start-setup', 'click', async () => {
-      if (replayIntro) {
-        replayIntro = false;
-        setupRenderedStep = null;
-        await request('RESTART_TUTORIAL');
-        await refresh();
-      } else await setupStep(1);
-    });
-  } else if (step === 1) {
-    on('#setup-back', 'click', () => setupStep(0));
-    on('#have-key', 'click', () => setupStep(2));
-  } else {
-    createKeyForm($('#setup-key-form'));
-    on('#setup-back', 'click', () => setupStep(1));
-  }
-
-  const heading = $('#setup-title');
-  heading.tabIndex = -1;
-  heading.focus({ preventScroll: true });
-  window.scrollTo(0, 0);
-}
-
-function unmountTutorial() {
-  tutorial?.destroy();
-  tutorial = null;
-}
-
 async function refresh() {
   const serial = ++refreshSerial;
   const response = await request('GET_STATE');
   if (serial !== refreshSerial || connectingUI) return;
   state = response.state;
-  if (firstRefresh) {
-    replayIntro =
-      document.body.dataset.page === 'welcome' &&
-      state.keyConfigured &&
-      state.tutorialComplete &&
-      location.hash !== '#dashboard';
-    firstRefresh = false;
-  }
   platform = response.platform;
   shortcut = response.shortcut;
   currentNotice = response.notice;
@@ -401,44 +310,16 @@ async function refresh() {
     $('#notice-message').textContent = currentNotice.message;
   }
 
-  if (!state.keyConfigured || !state.tutorialComplete || replayIntro) {
-    if (document.body.dataset.page !== 'welcome') {
-      if (isToolbarPopup) {
-        await request('OPEN_WELCOME');
-        window.close();
-      } else window.location.replace(chrome.runtime.getURL('welcome.html'));
-      return;
-    }
-    $('#navigation').hidden = true;
-    for (const id of ['home', 'history', 'settings']) $(`#${id}`).hidden = true;
-    $('#onboarding').hidden = false;
-
-    if (!state.keyConfigured || replayIntro) {
-      unmountTutorial();
-      renderOnboarding(replayIntro ? 0 : state.onboardingStep);
-    } else if (!tutorial) {
-      setupRenderedStep = null;
-      tutorial = mountTutorial($('#onboarding'), state, {
-        request,
-        refresh,
-        reportError: showProblem,
-        platform,
-        shortcut,
-        tabId: currentTab?.id,
-        isToolbarPopup
-      });
-    } else {
-      tutorial.updateShortcut(shortcut, platform);
-    }
-  } else {
-    unmountTutorial();
-    setupRenderedStep = null;
-    $('#navigation').hidden = false;
-    renderDashboard();
-    navigate(currentView, false);
-    if (document.body.dataset.page === 'welcome')
-      history.replaceState(null, '', '#dashboard');
+  if (!state.keyConfigured || !state.onboarding.completed) {
+    if (isToolbarPopup) {
+      await request('OPEN_WELCOME');
+      window.close();
+    } else window.location.replace(chrome.runtime.getURL('welcome.html'));
+    return;
   }
+  $('#navigation').hidden = false;
+  renderDashboard();
+  navigate(currentView, false);
 }
 
 function confirmAction(title, description, label, action) {
@@ -464,10 +345,8 @@ function confirmAction(title, description, label, action) {
   dialog.showModal();
 }
 
-const currentTab = await chrome.tabs.getCurrent();
 const isToolbarPopup = chrome.extension.getViews({ type: 'popup' }).includes(window);
 decorateButtons();
-document.body.classList.toggle('welcome-mode', document.body.dataset.page === 'welcome');
 document.body.classList.toggle('window-mode', !isToolbarPopup);
 document
   .querySelectorAll('[data-view]')
@@ -476,7 +355,7 @@ document
   );
 on('.wordmark', 'click', (event) => {
   event.preventDefault();
-  if (state?.keyConfigured && state.tutorialComplete) navigate('home');
+  if (state?.keyConfigured && state.onboarding.completed) navigate('home');
 });
 on('#open-window', 'click', async () => {
   await chrome.windows.create({
@@ -562,7 +441,7 @@ window.addEventListener('pagehide', () => {
 dayTimer = setInterval(() => {
   if (
     state?.keyConfigured &&
-    state.tutorialComplete &&
+    state.onboarding.completed &&
     !document.hidden &&
     renderedDay !== dayKey()
   )

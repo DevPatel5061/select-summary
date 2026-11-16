@@ -6,7 +6,7 @@ Select Summary has no analytics, advertising, telemetry, developer-run backend, 
 
 When you explicitly request a summary, the selected text and fixed summarization instructions are sent directly to Google's Gemini API over HTTPS. The API key authenticates that request in a header. Google also receives the network metadata associated with the request. Page URLs and titles are not included by the extension.
 
-After you accept the Google data notice, pasting a key (or selecting Connect) sends one small connection-check request to Gemini. A successful check saves the key. Each of the two required practice actions sends the portion of the bundled paragraph you select to Gemini and displays its real response inside the welcome page. Those successful summaries count toward local history, activity, and XP; the connection check does not. Each summary makes one request, and oversized responses are shortened locally. Failed requests do not retry automatically.
+After you accept the Google data notice and press **Verify & Save Key**, one small connection-check request is sent to Gemini. Pasting, typing, and checking consent do not initiate requests. A successful check saves the key. An explicit sandbox summary sends the portion of the bundled article you select and displays the real response inside the welcome page. Successful summaries count toward local history, activity, and XP; validation and the optional visual demo do not. Each action makes one request, and oversized summaries are shortened locally. Failed requests do not retry automatically.
 
 Google controls its API processing and retention. Under its free-tier terms, inputs and responses may be used to improve products and may be reviewed by people, subject to regional and account terms. Do not submit sensitive, personal, or confidential information. Consult [Google's API terms](https://ai.google.dev/gemini-api/terms) for the terms that apply to you.
 
@@ -14,13 +14,14 @@ Google controls its API processing and retention. Under its free-tier terms, inp
 
 The extension stores the following in `chrome.storage.local`, restricted to trusted extension contexts:
 
-| Data | Purpose |
-| --- | --- |
-| Your Gemini API key | Authenticate requests you initiate |
-| The latest 10 summaries and available timestamps | Local summary history |
-| Original/summary word counts | Estimate reading time saved without retaining source selections |
-| Daily summary counts and estimated seconds saved | Local activity chart, streaks, and personal bests |
-| Setup/practice progress, connection status, and a schema version | Resume onboarding, show the AI Connected badge, and preserve upgrades |
+| Data                                                                   | Purpose                                                         |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Your Gemini API key                                                    | Authenticate requests you initiate                              |
+| The latest 10 summaries and available timestamps                       | Local summary history                                           |
+| Original/summary word counts                                           | Estimate reading time saved without retaining source selections |
+| Daily summary counts and estimated seconds saved                       | Local activity chart, streaks, and personal bests               |
+| Three-step welcome progress, verification status, and a schema version | Resume setup and preserve upgrades                              |
+| First Summary milestone                                                | Remember the first successful summary after history is cleared  |
 
 Original selections are used transiently for API processing; they are not separately saved in history. **Summaries themselves may contain information from the original selection.** Local data is not sent to the developer or synchronized by the extension. Chrome's local storage is not an encrypted vault: someone with access to your browser profile or device may be able to access it.
 
@@ -42,4 +43,4 @@ Google AI Studio and documentation links open external websites with their own t
 
 ## Welcome and rewards
 
-The welcome tab opens locally on first installation, not on updates. Setup illustrations and the pin reminder are bundled, code-based visuals; they do not record or access your Google account. XP and reader levels are derived from local summary counts and are never transmitted. Replaying the practice guide makes new API requests when you explicitly summarize the sample again.
+The welcome tab opens locally on first installation, not on updates. Setup illustrations and the pin reminder are bundled, code-based visuals; they do not record or access your Google account. XP is derived from local summary counts; XP and milestones are never transmitted. Watching animations does not contact Google or award activity. Explicitly summarizing the sample again makes a new API request and counts as another summary. The sandbox selection pill does not run on other websites. Finishing the welcome guide closes its tab or shows a new tab page; it never opens a third-party sample site.

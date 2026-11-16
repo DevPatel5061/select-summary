@@ -6,7 +6,7 @@ Select Summary has no analytics, advertising, telemetry, developer-run backend, 
 
 When you explicitly request a summary, the selected text and fixed summarization instructions are sent directly to Google's Gemini API over HTTPS. The API key authenticates that request in a header. Google also receives the network metadata associated with the request. Page URLs and titles are not included by the extension.
 
-The **Test and connect** action sends a bundled, synthetic paragraph about urban gardens. It does not read your active page. A request may make one additional call if the first response exceeds the summary length limit. Failed requests are not automatically retried.
+Saving an API key makes no network request. The required practice walkthrough uses a bundled paragraph and example summary entirely on your device. Each real summarization action makes one Gemini request; oversized responses are shortened locally. Failed requests are not automatically retried.
 
 Google controls its API processing and retention. Under its free-tier terms, inputs and responses may be used to improve products and may be reviewed by people, subject to regional and account terms. Do not submit sensitive, personal, or confidential information. Consult [Google's API terms](https://ai.google.dev/gemini-api/terms) for the terms that apply to you.
 
@@ -20,7 +20,7 @@ The extension stores the following in `chrome.storage.local`, restricted to trus
 | The latest 10 summaries and available timestamps | Local summary history |
 | Original/summary word counts | Estimate reading time saved without retaining source selections |
 | Daily summary counts and estimated seconds saved | Local activity chart, streaks, and personal bests |
-| Setup progress and a schema version | Resume onboarding and preserve data across upgrades |
+| Setup/practice progress and a schema version | Resume onboarding and preserve data across upgrades |
 
 Original selections are used transiently for API processing; they are not separately saved in history. **Summaries themselves may contain information from the original selection.** Local data is not sent to the developer or synchronized by the extension. Chrome's local storage is not an encrypted vault: someone with access to your browser profile or device may be able to access it.
 

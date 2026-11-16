@@ -13,7 +13,17 @@ const paths = {
 
 export function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  for (const [key, value] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' })) svg.setAttribute(key, value);
+  for (const [key, value] of Object.entries({
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '1.7',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'aria-hidden': 'true',
+    focusable: 'false'
+  }))
+    svg.setAttribute(key, value);
   for (const d of paths[name] || []) {
     const path = document.createElementNS(svg.namespaceURI, 'path');
     path.setAttribute('d', d);
@@ -23,7 +33,7 @@ export function icon(name) {
 }
 
 export function decorateButtons(root = document) {
-  root.querySelectorAll('button[data-icon]').forEach(button => {
+  root.querySelectorAll('button[data-icon]').forEach((button) => {
     if (!button.querySelector('svg')) button.prepend(icon(button.dataset.icon));
   });
 }

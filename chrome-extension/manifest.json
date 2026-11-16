@@ -23,7 +23,9 @@
   },
   "icons": { "128": "icon/icon.png" },
   "host_permissions": ["https://generativelanguage.googleapis.com/*"],
-  "web_accessible_resources": [{ "resources": ["summary.css"], "matches": ["http://*/*", "https://*/*"] }],
+  "web_accessible_resources": [
+    { "resources": ["summary.css"], "matches": ["http://*/*", "https://*/*"] }
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://generativelanguage.googleapis.com; base-uri 'none'; frame-ancestors 'none'"
   }

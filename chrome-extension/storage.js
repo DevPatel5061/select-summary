@@ -10,7 +10,8 @@ export function createStore(storage) {
         await storage.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
         const existing = await storage.get(['appState', 'geminiApiKey', 'summaries']);
         const migrated = migrateState(existing);
-        if (!existing.appState || existing.appState.version !== migrated.version) await storage.set({ appState: migrated });
+        if (!existing.appState || existing.appState.version !== migrated.version)
+          await storage.set({ appState: migrated });
         await storage.remove(['geminiApiKey', 'summaries']);
         initialized = true;
       }
@@ -23,5 +24,5 @@ export function createStore(storage) {
     queue = operation.catch(() => {});
     return operation;
   }
-  return { read: () => transaction(), update: transform => transaction(transform) };
+  return { read: () => transaction(), update: (transform) => transaction(transform) };
 }

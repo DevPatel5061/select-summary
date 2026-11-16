@@ -1,6 +1,6 @@
 # Select Summary
 
-**Less reading. More understanding.**
+**Summarize highlighted text with Gemini.**
 
 A Manifest V3 Chrome extension that turns highlighted text into a concise Gemini summary. Bring your own API key, keep recent summaries locally, and see your reading activity without extension tracking.
 
@@ -8,8 +8,8 @@ A Manifest V3 Chrome extension that turns highlighted text into a concise Gemini
 
 ## Features
 
-- Plain-text summaries targeting 30–50 words, shorter for short selections.
-- Guided API key setup that tests a synthetic example before saving the key.
+- Plain-text summaries targeting 15–30 words (35 maximum), shorter for short selections.
+- Immediate API key setup followed by required local practice of right-click and keyboard summarization.
 - In-page results and a local history of the latest 10 summaries.
 - Daily activity, estimated reading time saved, streaks, and personal bests.
 - Responsive toolbar popup and resizable window, keyboard access, and reduced-motion support.
@@ -19,7 +19,7 @@ A Manifest V3 Chrome extension that turns highlighted text into a concise Gemini
 | --- | --- |
 | ![Overview with synthetic activity](docs/images/overview.png) | ![First-time setup preview](docs/images/onboarding.png) |
 
-Screenshots use synthetic data. The activity chart is a local feature, not developer analytics.
+Screenshots use synthetic data. See the [required practice walkthrough](docs/images/tutorial.png). The activity chart is a local feature, not developer analytics.
 
 ## Install from this repository
 
@@ -45,10 +45,10 @@ Use Chrome 127 or newer. Compatible Chromium browsers may work, but shortcut han
 2. Create or select a project. Use a project **without billing enabled** to avoid API charges; Google controls free-tier eligibility and quotas.
 3. Create a key restricted to the Gemini API and copy it.
 4. Return to the extension, choose **I have my key**, and paste it into the masked field.
-5. Read the Google data notice, accept it, and select **Test and connect**. This sends a bundled urban-garden example and saves the key only after a successful response.
-6. View the result, then open your dashboard. Setup tests do not count toward activity or history.
+5. Read and accept the Google data notice, then select **Save key**. The key is saved immediately without an API test call.
+6. Complete both practice steps: highlight the paragraph and use the right-click menu, then highlight again and use your assigned shortcut. This walkthrough runs locally and does not count toward history or activity.
 
-The setup step is remembered if the popup closes while visiting AI Studio. Unsaved keys are not persisted. Replace a key in **Settings**; an unsuccessful replacement test keeps the existing key connected.
+The setup step is remembered if the popup closes while visiting AI Studio. Unsaved keys are not persisted. Replace a key in **Settings**. Key access is checked when you request your first real summary, not during setup.
 
 **The extension has no fees, advertising, analytics, or developer-run backend.** Gemini is a separate service: selected text goes to Google, free-tier content may be used for product improvement and human review, and billing-enabled projects may incur charges. The extension cannot verify project billing status. Avoid sensitive text. Read [Privacy and data handling](PRIVACY.md), [Google's terms](https://ai.google.dev/gemini-api/terms), and [API pricing](https://ai.google.dev/gemini-api/docs/pricing).
 
@@ -56,7 +56,7 @@ The setup step is remembered if the popup closes while visiting AI Studio. Unsav
 
 1. Highlight text on a regular webpage.
 2. Right-click and select **Summarize selection**, or use its shortcut.
-3. Read or copy the result. The card stays visible until dismissed or replaced.
+3. Read or copy the result. The card closes after 25 seconds, or immediately when you select its X. Error cards close after 10 seconds. The circular indicator shows the remaining time.
 4. Open **History** to revisit summaries. The header's window button opens a larger view.
 
 | Action | Default shortcut |
@@ -91,7 +91,7 @@ Extension UI → validated messages → Background worker → HTTPS → Gemini
 - **Request boundary:** the worker owns Gemini calls and key persistence. Privileged messages are accepted only from the extension UI. Content scripts do not receive keys or access local storage.
 - **Storage consistency:** one queue serializes mutations, preserving concurrent updates. Credential revisions prevent in-flight results from restoring history after a reset or key change.
 - **Safe rendering:** generated text uses DOM text APIs. A closed Shadow DOM isolates card styles, and repeated injection registers one listener.
-- **Concise output:** system instructions separate the task from source text. Oversized results get one shortening attempt; blocked, empty, or incomplete outputs are not saved.
+- **Concise output:** system instructions separate the task from source text. Each action makes one API request using minimal thinking. Oversized results are shortened locally at sentence boundaries where possible, with a word-boundary excerpt as fallback; blocked, empty, or incomplete outputs are not saved.
 - **Failure handling:** requests time out, duplicate submissions are suppressed per tab, and safe errors distinguish key access, quotas, connectivity, model availability, and storage failures.
 - **Maintainability:** `core.js` holds pure migration/activity logic, `storage.js` serializes persistence, and `gemini.js` owns the provider contract. UI, orchestration, and injected rendering have separate responsibilities.
 
@@ -121,6 +121,7 @@ npm run verify
 
 - `npm run check`: syntax, manifest permissions, and source hygiene.
 - `npm test`: unit tests and worker flows.
+- `npm run format`: format JavaScript, HTML, CSS, and tests; `npm run format:check` checks formatting.
 - `npm run test:browser`: isolated Chromium integration checks and synthetic screenshots.
 
 Tests use synthetic credentials/text, replace worker API calls with mocks, block external page requests, and use disposable profiles. **They never call live Gemini.** Card injection uses a localhost permission added only to a temporary manifest copy. Dependencies and test reports are not part of the loaded extension.
@@ -131,7 +132,7 @@ Coverage includes migrations, concurrency, key replacement, in-flight resets, ou
 
 | Problem | Try this |
 | --- | --- |
-| Key test fails | Verify the complete key, Gemini access, restrictions, project eligibility, and region in AI Studio. |
+| First summary rejects the key | Verify the complete key, Gemini access, restrictions, project eligibility, and region in AI Studio. |
 | Quota exhausted | Check project limits and wait for reset. The extension does not enable billing or switch providers. |
 | No selection | Highlight webpage text first; protected pages and some viewers cannot be accessed. |
 | Missing result card | Open History. Completed summaries survive failed injection. |
@@ -144,8 +145,8 @@ Coverage includes migrations, concurrency, key replacement, in-flight resets, ou
 
 ### 3.0.0 — Source update; store publication pending
 
-- Responsive redesign, guided key testing, local activity dashboard, and accessible feedback.
-- Short summaries, bounded shortening, request limits, and useful errors.
+- Responsive redesign, immediate key saving and a required two-method walkthrough, local activity dashboard, and accessible feedback.
+- Short summaries, local output shortening, request limits, and useful errors.
 - Restricted key access, header authentication, isolated card styles, and serialized storage.
 - Replaced the Undo-conflicting shortcut; fixed malformed markup and unsupported worker alerts.
 - Added internal synthetic tests, privacy documentation, and existing-user migrations.
@@ -156,4 +157,4 @@ Coverage includes migrations, concurrency, key replacement, in-flight resets, ou
 
 ## License and assets
 
-The project retains its [GNU GPL v3 license](LICENSE). Original button SVG paths in `icons.js` are separately dedicated under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), and used only inside buttons. The existing raster extension icon is retained. No remote fonts or third-party icon library is loaded.
+The project retains its [GNU GPL v3 license](LICENSE). Original button SVG paths in `icons.js` and `content.js` are separately dedicated under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), and used only inside buttons. The existing raster extension icon is retained. No remote fonts or third-party icon library is loaded.

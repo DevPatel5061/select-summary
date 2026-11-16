@@ -1,21 +1,165 @@
-:host { font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#151b28; color-scheme:light; direction:ltr; text-align:left; }
-* { box-sizing:border-box; }
-.card { width:min(350px,calc(100vw - 40px)); padding:18px; background:#fff; border:1px solid #dce5f1; border-radius:16px; box-shadow:0 12px 60px #122c5430,0 2px 8px #122c5410; font-family:inherit; animation:arrive .22s ease-out; }
-.header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
-.brand { font-size:11px; font-weight:600; color:#0868e8; letter-spacing:-.2px; }
-button { font-family:inherit; cursor:pointer; border:0; border-radius:8px; font-size:11px; padding:7px 10px; transition:background .15s,transform .15s; }
-button:focus-visible { outline:3px solid #6c9ff0; outline-offset:3px; }
-button:active { transform:scale(.97); }
-.close { background:#f5f8fc; color:#636e80; font-size:10px; }
-.close:hover { background:#eaf2ff; }
-h2 { margin:0 0 10px; font-weight:600; font-size:20px; line-height:1.2; letter-spacing:-.6px; color:#151b28; }
-.text { white-space:pre-wrap; overflow-wrap:anywhere; max-height:min(300px,45vh); overflow:auto; font-size:13px; line-height:1.7; color:#354052; margin:0; user-select:text; }
-.footer { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px; border-top:1px solid #e7ebf1; padding-top:12px; }
-.footer span { font-size:9px; color:#636e80; flex:1; }
-.copy { background:#0868e8; color:#fff; white-space:nowrap; }
-.copy:hover { background:#044bac; }
-.progress { height:3px; background:linear-gradient(90deg,#eaf2ff,#0868e8,#eaf2ff); background-size:200% 100%; animation:progress 1.5s linear infinite; border-radius:4px; margin-top:17px; }
-.error { border-left:3px solid #0868e8; }
-@keyframes arrive { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-@keyframes progress { to { background-position:-200% 0; } }
-@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; } }
+:host {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #151b28;
+  color-scheme: light;
+  direction: ltr;
+  text-align: left;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.card {
+  width: min(350px, calc(100vw - 40px));
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #dce5f1;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 60px #122c5430,
+    0 2px 8px #122c5410;
+  font-family: inherit;
+  animation: arrive 0.22s ease-out;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.brand {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0868e8;
+  letter-spacing: -0.3px;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: background 0.15s;
+}
+button:focus-visible {
+  outline: 3px solid #6c9ff0;
+  outline-offset: 3px;
+}
+.close {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  background: transparent;
+  color: #636e80;
+  flex-shrink: 0;
+}
+.close:hover {
+  background: #eaf2ff;
+  color: #0868e8;
+}
+.close svg {
+  display: block;
+  width: 32px;
+  height: 32px;
+}
+.timer-track {
+  stroke: #e7ebf1;
+}
+.timer-progress {
+  stroke: #0868e8;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.timed .timer-progress {
+  animation: close-countdown var(--close-duration) linear forwards;
+}
+h2 {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+  color: #151b28;
+}
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: min(300px, 45vh);
+  overflow: auto;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #354052;
+  margin: 0;
+  user-select: text;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  background: #0868e8;
+  color: white;
+  font-size: 12px;
+}
+.copy svg {
+  width: 16px;
+  height: 16px;
+}
+.copy:hover {
+  background: #044bac;
+}
+.progress {
+  height: 3px;
+  background: linear-gradient(90deg, #eaf2ff, #0868e8, #eaf2ff);
+  background-size: 200% 100%;
+  animation: progress 1.5s linear infinite;
+  border-radius: 4px;
+  margin-top: 17px;
+}
+.error {
+  border-left: 3px solid #0868e8;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes progress {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes close-countdown {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* Automatic dismissal still works without a moving countdown. */
+  .timer-progress {
+    stroke-dashoffset: 0;
+  }
+}

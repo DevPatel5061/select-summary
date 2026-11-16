@@ -8,12 +8,15 @@
     "test": "TZ=America/Toronto node --test tests/*.test.js",
     "test:browser": "playwright test",
     "check": "node scripts/check.js",
-    "verify": "npm run check && npm test && npm run test:browser"
+    "verify": "npm run check && npm test && npm run test:browser",
+    "format": "prettier --write \"chrome-extension/**/*.{js,html,css,json}\" \"tests/**/*.js\" \"scripts/*.js\" playwright.config.js package.json",
+    "format:check": "prettier --check \"chrome-extension/**/*.{js,html,css,json}\" \"tests/**/*.js\" \"scripts/*.js\" playwright.config.js package.json"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.1"
+    "@playwright/test": "^1.65.1",
+    "prettier": "^3.10.1"
   }
 }

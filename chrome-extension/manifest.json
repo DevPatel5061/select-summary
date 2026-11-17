@@ -1,7 +1,7 @@
 {
   "name": "Select Summary",
   "description": "Turn highlighted text into a concise Gemini summary. Local history and activity, with no extension tracking.",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "manifest_version": 3,
   "minimum_chrome_version": "127",
   "permissions": ["storage", "contextMenus", "scripting", "activeTab"],

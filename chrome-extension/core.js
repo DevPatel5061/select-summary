@@ -2,62 +2,6 @@ export const VERSION = 4;
 export const HISTORY_LIMIT = 10;
 export const MAX_INPUT_LENGTH = 50_000;
 export const MODEL = 'gemini-3.5-flash-lite';
-// Original practice prose. Canada facts were checked against
-// https://en.wikipedia.org/wiki/Canada; no Wikipedia text or images are bundled.
-// Keeping all demo sources here lets the worker validate selected text without
-// accepting arbitrary content or collecting the source page's URL.
-function practiceText(text) {
-  return text.replace(/\s+/g, ' ').trim();
-}
-
-export const DEMO_PAGES = Object.freeze({
-  summary: {
-    title: 'Select Summary',
-    address: 'select-summary.local',
-    text: practiceText(`
-      Select Summary turns the text you highlight into a short explanation of its
-      main ideas. Select a passage on a webpage, right-click, and choose Summarize
-      selection, or use your keyboard shortcut. The result appears in a small card
-      on the same page, where you can read or copy it. Your recent summaries and
-      daily activity stay on your device. Requests go directly to Google using your
-      own Gemini key; there is no Select Summary account or developer server.
-    `)
-  },
-  store: {
-    title: 'Select Summary – Chrome Web Store',
-    address:
-      'chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd',
-    text: practiceText(`
-      Select Summary is a Chrome extension for reading highlighted text more
-      quickly. It uses Gemini to produce a concise summary, then displays the result
-      without leaving the webpage. You can copy the summary and revisit recent
-      results in your local history. A dashboard tracks daily summaries, reading
-      streaks, and estimated time saved. The extension is free, has no
-      advertisements or analytics, and connects directly to Google with a key you
-      provide. Google’s API terms and free-tier limits apply.
-    `)
-  },
-  canada: {
-    title: 'Canada – Wikipedia',
-    address: 'en.wikipedia.org/wiki/Canada',
-    text: practiceText(`
-      Canada occupies the northern part of North America and includes ten provinces
-      and three territories. Its shores meet the Atlantic, Pacific, and Arctic
-      oceans, and its total area makes it the world’s second-largest country. Ottawa
-      serves as the capital, while Toronto is the largest city. Much of the
-      population lives in urban areas, with many communities concentrated near the
-      southern border. English and French have official status at the federal level.
-      Indigenous peoples lived across these lands for thousands of years before
-      European settlement. Confederation in 1867 brought together the first four
-      provinces, and the country later expanded to its present boundaries. Canada
-      combines a parliamentary democracy with a constitutional monarchy, with
-      responsibilities divided between federal and provincial governments. Its
-      landscapes range from mountain ranges and prairie grasslands to extensive
-      forests and Arctic tundra. These differences in geography, climate, language,
-      and history shape the country’s regional identities.
-    `)
-  }
-});
 export class AppError extends Error {
   constructor(code, message) {
     super(message);

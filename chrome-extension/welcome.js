@@ -1,27 +1,23 @@
+import { activityStats } from './core.js';
 import { decorateButtons } from './icons.js';
-import { createPracticeBrowser } from './practice-browser.js';
-import './summary-card.js';
+import { shortcutKeys, matchesShortcut } from './shortcuts.js';
+import { createWalkthroughs } from './walkthroughs.js';
 
-// The welcome page owns setup and progression; the local browser owns selection,
-// tab navigation and keyboard feedback. Credentials remain in the worker.
 const $ = (selector) => document.querySelector(selector);
+const guideTab = await chrome.tabs.getCurrent();
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const currentTab = await chrome.tabs.getCurrent();
 let state;
 let step = 1;
 let verifying = false;
-let summarizing = false;
 let changingKey = false;
-let liveCard;
-let viewRevision = 0;
+let openingPractice = false;
 let snapshotSerial = 0;
 let confettiTimer;
-const summaries = new Map();
-const practice = createPracticeBrowser({
-  onSummarize: runSummary,
-  onViewChange: changeView
-});
-
+let keys = [];
+let shortcutSignature = '';
+let keyTimer;
+const downCodes = new Set();
+const walkthroughs = createWalkthroughs(pageError);
 async function request(type, fields = {}) {
   let response;
   try {
@@ -66,38 +62,58 @@ function updateConnect() {
     (!$('#api-key').value.trim() && !useStored);
   $('#verify-key').textContent = verifying ? 'Verifying…' : 'Verify & Continue';
 }
+
+function clearKeys() {
+  clearTimeout(keyTimer);
+  downCodes.clear();
+  document
+    .querySelectorAll('#shortcut-keys kbd')
+    .forEach((cap) => cap.classList.remove('is-pressed'));
+}
+function renderKeys(shortcut, platform) {
+  const signature = JSON.stringify([shortcut, platform]);
+  if (signature === shortcutSignature) return;
+  clearKeys();
+  shortcutSignature = signature;
+  keys = shortcutKeys(shortcut, platform);
+  const root = $('#shortcut-keys');
+  root.replaceChildren();
+  const symbols = { Option: '⌥', Shift: '⇧', Ctrl: '⌃', Command: '⌘' };
+  for (const key of keys) {
+    const cap = document.createElement('kbd');
+    cap.dataset.key = key;
+    cap.textContent = platform === 'mac' && symbols[key] ? `${symbols[key]} ${key}` : key;
+    root.append(cap);
+  }
+  if (!keys.length) root.textContent = 'Set a shortcut at chrome://extensions/shortcuts';
+}
 async function snapshot() {
   const serial = ++snapshotSerial;
-  const result = await request('GET_STATE');
+  const [result, practice] = await Promise.all([
+    request('GET_STATE'),
+    request('GET_PRACTICE')
+  ]);
   if (serial !== snapshotSerial) return;
   state = result.state;
-  practice.setShortcut(result.shortcut, result.platform);
+  renderKeys(result.shortcut, result.platform);
   if (!verifying) updateConnect();
-  $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete || summarizing;
-}
-function closeCard() {
-  viewRevision++;
-  liveCard?.destroy();
-  liveCard = null;
-}
-function changeView({ pageId, reason }) {
-  closeCard();
-  if (reason === 'reset') summaries.delete(pageId);
-  $('#show-summary').hidden = !summaries.has(pageId);
-  message($('#sandbox-status'), '');
-}
-function showCard(payload) {
-  if (!liveCard?.host.isConnected) {
-    liveCard = globalThis.SelectSummaryCard.create({
-      container: practice.viewport,
-      placement: 'embedded',
-      onClose() {
-        $('#show-summary').hidden = !summaries.has(practice.pageId);
-      }
-    });
+  $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete;
+  $('#start-practice').textContent = practice.practice.active
+    ? 'Return to articles'
+    : 'Open practice window';
+  $('#start-practice').disabled = openingPractice;
+  $('#end-practice').hidden =
+    !practice.practice.active || practice.practice.guideId !== guideTab?.id;
+  message(
+    $('#practice-status'),
+    practice.practice.message ||
+      (practice.practice.active ? 'Practice is open in this Chrome window.' : '')
+  );
+  $('#summary-reward').hidden = !state.onboarding.sandboxComplete;
+  if (state.onboarding.sandboxComplete) {
+    $('#reward-streak').textContent =
+      `${activityStats(state.activity).currentStreak}-day streak`;
   }
-  liveCard.update(payload);
-  $('#show-summary').hidden = true;
 }
 async function showStep(next, { persist = true, focus = true } = {}) {
   if (!state) return;
@@ -107,9 +123,17 @@ async function showStep(next, { persist = true, focus = true } = {}) {
     await request('SET_WELCOME_STEP', { step: next });
     state.onboarding.step = next;
   }
-  closeCard();
+  // Leaving Try It must also release the guard when using the progress tabs,
+  // so opening AI Studio from Connect is never mistaken for an extra tab.
+  if (next !== 2) {
+    // Read the worker's current session, not a potentially older UI snapshot:
+    // the user can return to Connect while opening practice is still resolving.
+    const { practice } = await request('GET_PRACTICE');
+    if (practice.active && practice.guideId === guideTab?.id)
+      await request('END_PRACTICE');
+  }
   step = next;
-  practice.setEnabled(step === 2);
+  clearKeys();
   $('#page-error').hidden = true;
   $('#step-label').textContent = `Step ${step} of 3`;
   ['connect', 'sandbox', 'pin'].forEach((name, index) => {
@@ -127,14 +151,11 @@ async function showStep(next, { persist = true, focus = true } = {}) {
     if (number === step) button.setAttribute('aria-current', 'step');
     else button.removeAttribute('aria-current');
   });
+  walkthroughs.show(step);
   if (step === 1) updateConnect();
-  if (step === 2) {
-    $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete || summarizing;
-    if (summaries.has(practice.pageId))
-      showCard({ kind: 'summary', text: summaries.get(practice.pageId) });
-    else $('#show-summary').hidden = true;
+  if (step === 3) {
+    await updatePinStatus();
   }
-  if (step === 3) await updatePinStatus();
   if (focus) {
     $(`#${['connect', 'sandbox', 'pin'][step - 1]}-title`).focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -156,45 +177,6 @@ function celebrate() {
     layer.replaceChildren();
   }, 1300);
 }
-async function runSummary({ method, selection, pageId }) {
-  if (step !== 2 || summarizing) return;
-  summarizing = true;
-  practice.setBusy(true);
-  $('#continue-sandbox').disabled = true;
-  message($('#sandbox-status'), '');
-  const revision = viewRevision;
-  showCard({ kind: 'loading', text: 'Summarizing…' });
-  try {
-    const result = await request('SUMMARIZE_SANDBOX', {
-      method,
-      selection,
-      requestId: crypto.randomUUID()
-    });
-    summaries.set(pageId, result.summary);
-    // Tab switching and reset never cancel an already-approved API request.
-    // Save its result, but do not put a card on a different page or undo reset.
-    if (step === 2 && practice.pageId === pageId && revision === viewRevision) {
-      showCard({ kind: 'summary', text: result.summary });
-    } else {
-      $('#show-summary').hidden = !summaries.has(practice.pageId);
-      if (step === 2) practice.showNotice('Summary saved to History.');
-    }
-    await snapshot();
-    $('#summary-reward').hidden = false;
-    $('#reward-streak').textContent = `${result.stats.currentStreak}-day streak`;
-    $('#reward-badge').textContent = result.firstMilestone
-      ? 'First Summary unlocked'
-      : 'First Summary';
-  } catch (error) {
-    if (step === 2 && revision === viewRevision)
-      showCard({ kind: 'error', text: error.message });
-    message($('#sandbox-status'), error.message, true);
-  } finally {
-    summarizing = false;
-    practice.setBusy(false);
-    $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete;
-  }
-}
 async function updatePinStatus() {
   try {
     const settings = await chrome.action.getUserSettings();
@@ -206,8 +188,6 @@ async function updatePinStatus() {
   }
 }
 
-// Verification is an explicit form action. Input, consent, optional help and
-// switching demo tabs never initiate an API request.
 $('#api-key').addEventListener('input', updateConnect);
 $('#google-consent').addEventListener('change', updateConnect);
 $('#reveal-key').addEventListener('click', () => {
@@ -271,8 +251,15 @@ $('#key-form').addEventListener('submit', async (event) => {
     updateConnect();
   }
 });
+
 $('#continue-connect').addEventListener('click', () => showStep(2).catch(pageError));
-$('#back-connect').addEventListener('click', () => showStep(1).catch(pageError));
+$('#back-connect').addEventListener('click', async () => {
+  try {
+    await showStep(1);
+  } catch (error) {
+    pageError(error);
+  }
+});
 $('#continue-sandbox').addEventListener('click', () => showStep(3).catch(pageError));
 $('#back-sandbox').addEventListener('click', () => showStep(2).catch(pageError));
 document
@@ -282,78 +269,159 @@ document
       showStep(Number(button.dataset.step)).catch(pageError)
     )
   );
-$('#show-summary').addEventListener('click', () => {
-  const text = summaries.get(practice.pageId);
-  if (text) showCard({ kind: 'summary', text });
+$('#start-practice').addEventListener('click', async () => {
+  if (openingPractice) return;
+  openingPractice = true;
+  $('#start-practice').disabled = true;
+  try {
+    const tab = await chrome.tabs.getCurrent();
+    await request('START_PRACTICE', { guideId: tab.id });
+    await snapshot();
+  } catch (error) {
+    message($('#practice-status'), error.message, true);
+  } finally {
+    openingPractice = false;
+    $('#start-practice').disabled = false;
+  }
+});
+$('#end-practice').addEventListener('click', async () => {
+  try {
+    await request('END_PRACTICE');
+    await snapshot();
+    message($('#practice-status'), 'Practice restrictions ended. You can browse freely.');
+  } catch (error) {
+    pageError(error);
+  }
+});
+document.addEventListener('keydown', (event) => {
+  if (step !== 2) return;
+  downCodes.add(event.code);
+  const modifiers = {
+    Alt: event.altKey,
+    Option: event.altKey,
+    Shift: event.shiftKey,
+    Ctrl: event.ctrlKey,
+    Command: event.metaKey,
+    Meta: event.metaKey
+  };
+  document.querySelectorAll('#shortcut-keys kbd').forEach((cap) => {
+    const key = cap.dataset.key;
+    cap.classList.toggle(
+      'is-pressed',
+      Object.hasOwn(modifiers, key)
+        ? modifiers[key]
+        : downCodes.has(
+            /^[0-9]$/.test(key)
+              ? `Digit${key}`
+              : key.length === 1
+                ? `Key${key.toUpperCase()}`
+                : key
+          )
+    );
+  });
+  if (matchesShortcut(event, keys)) {
+    event.preventDefault();
+    message(
+      $('#sandbox-status'),
+      'Open either article and highlight text to summarize it.'
+    );
+  }
+});
+document.addEventListener('keyup', (event) => {
+  downCodes.delete(event.code);
+  if (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) clearKeys();
+  else
+    document.querySelectorAll('#shortcut-keys kbd').forEach((cap) => {
+      const modifiers = {
+        Alt: event.altKey,
+        Option: event.altKey,
+        Shift: event.shiftKey,
+        Ctrl: event.ctrlKey,
+        Command: event.metaKey,
+        Meta: event.metaKey
+      };
+      const key = cap.dataset.key;
+      cap.classList.toggle(
+        'is-pressed',
+        Object.hasOwn(modifiers, key)
+          ? modifiers[key]
+          : downCodes.has(key.length === 1 ? `Key${key.toUpperCase()}` : key)
+      );
+    });
 });
 chrome.runtime.onMessage.addListener((payload, sender, respond) => {
   if (
     sender.id !== chrome.runtime.id ||
     sender.tab ||
-    payload?.targetTabId !== currentTab?.id ||
-    !['PRACTICE_SHORTCUT', 'PRACTICE_CONTEXT'].includes(payload.type)
+    !['PRACTICE_SHORTCUT', 'PRACTICE_CONTEXT'].includes(payload?.type)
   )
     return false;
+  chrome.tabs.getCurrent().then((tab) => {
+    if (payload.targetTabId !== tab?.id) return;
+    if (step === 2) {
+      document
+        .querySelectorAll('#shortcut-keys kbd')
+        .forEach((cap) => cap.classList.add('is-pressed'));
+      keyTimer = setTimeout(clearKeys, 200);
+      message(
+        $('#sandbox-status'),
+        'Open either article and highlight text to summarize it.'
+      );
+    }
+  });
   respond({ handled: true });
-  practice.handleCommand(
-    payload.type === 'PRACTICE_CONTEXT' ? 'context' : 'shortcut',
-    payload.selection
-  );
   return false;
 });
 $('#finish-welcome').addEventListener('click', async () => {
   $('#finish-welcome').disabled = true;
   try {
     await request('FINISH_WELCOME');
-    const tabs = await chrome.tabs.query({ windowId: currentTab.windowId });
-    if (tabs.length === 1)
-      await chrome.tabs.update(currentTab.id, { url: 'chrome://newtab/' });
-    else await chrome.tabs.remove(currentTab.id);
+    const tab = await chrome.tabs.getCurrent();
+    const tabs = await chrome.tabs.query({ windowId: tab.windowId });
+    if (tabs.length === 1) await chrome.tabs.update(tab.id, { url: 'chrome://newtab/' });
+    else await chrome.tabs.remove(tab.id);
   } catch (error) {
     $('#finish-welcome').disabled = false;
     pageError(error);
   }
 });
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || !changes.appState || !state) return;
+  if (
+    !state ||
+    !(
+      (area === 'local' && changes.appState) ||
+      (area === 'session' && (changes.practiceSession || changes.practiceStatus))
+    )
+  )
+    return;
   snapshot()
     .then(async () => {
-      if (!state.keyConfigured) {
-        summaries.clear();
-        $('#show-summary').hidden = true;
-      }
       if (!state.keyValidated && step !== 1) await showStep(1, { persist: false });
       else if (!state.onboarding.sandboxComplete && step === 3)
         await showStep(2, { persist: false });
-      if (!state.onboarding.sandboxComplete) $('#summary-reward').hidden = true;
     })
     .catch(pageError);
 });
-// A browser shortcut can switch tabs without delivering keyup to this view.
-// Native activation events also cover Chromium views that keep reporting focus.
-chrome.tabs.onActivated.addListener(({ windowId }) => {
-  if (windowId === currentTab?.windowId) {
-    practice.clearKeys();
-    practice.closeMenu();
-  }
-});
+window.addEventListener('blur', clearKeys);
+window.addEventListener('resize', () => walkthroughs.stop());
 document.addEventListener('visibilitychange', () => {
+  clearKeys();
   if (document.hidden) {
-    practice.clearKeys();
-    practice.closeMenu();
+    walkthroughs.stop();
     $('#api-key').type = 'password';
     $('#reveal-key').setAttribute('aria-pressed', 'false');
     $('#reveal-key').setAttribute('aria-label', 'Show entered key');
   } else
     snapshot()
       .then(() => {
+        walkthroughs.show(step);
         if (step === 3) void updatePinStatus();
       })
       .catch(pageError);
 });
 window.addEventListener('pagehide', () => {
-  practice.destroy();
-  liveCard?.destroy();
+  walkthroughs.stop();
+  clearKeys();
   clearTimeout(confettiTimer);
   $('#api-key').value = '';
 });

@@ -1,7 +1,5 @@
 import {
   AppError,
-  DEMO_PAGES,
-  activityStats,
   addSummary,
   initialState,
   isAppSender,
@@ -12,10 +10,11 @@ import {
 } from './core.js';
 import { createStore } from './storage.js';
 import { summarize, validateApiKey } from './gemini.js';
+import { createPracticeSessions } from './practice-session.js';
 
 const store = createStore(chrome.storage.local);
 const activeTabs = new Set();
-const activePractice = new Set();
+const practiceSessions = createPracticeSessions();
 let activeCount = 0;
 let connecting = false;
 let credentialEpoch = 0;
@@ -91,6 +90,7 @@ async function handleSelection(selection, tab) {
   try {
     const source = validateSelection(selection);
     const state = await store.read();
+    const practiceId = await practiceSessions.match(tab.id);
     if (!state.key)
       throw new AppError('NO_KEY', 'Open Select Summary and connect your Gemini key.');
     await notice('loading', 'Summarizing', 'Waiting for Gemini.');
@@ -100,13 +100,16 @@ async function handleSelection(selection, tab) {
     await store.update((current) => {
       if (current.credentialRevision !== state.credentialRevision)
         throw new AppError('CANCELLED', 'Settings changed. Please try again.');
-      return addSummary(
+      const next = addSummary(
         current,
         text,
         wordCount(source),
         Date.now(),
         crypto.randomUUID()
       );
+      return practiceId
+        ? { ...next, onboarding: { ...next.onboarding, sandboxComplete: true } }
+        : next;
     });
     const shown = await showCard(tab.id, { kind: 'summary', text });
     await notice(
@@ -190,68 +193,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-async function runSandbox(message) {
-  if (!['pill', 'shortcut', 'context'].includes(message.method))
-    throw new AppError('SANDBOX', 'Choose a sandbox summarization action.');
-  const source = validateSelection(message.selection);
-  const normalize = (value) => value.replace(/\s+/g, ' ').trim();
-  if (
-    !Object.values(DEMO_PAGES).some((page) =>
-      normalize(page.text).includes(normalize(source))
-    )
-  )
-    throw new AppError('SANDBOX', 'Highlight text inside one of the demo pages.');
-  const state = await store.read();
-  if (!state.key || !state.keyValidated)
-    throw new AppError('NO_KEY', 'Verify your Gemini key first.');
-  if (
-    typeof message.requestId !== 'string' ||
-    !/^[a-zA-Z0-9-]{16,64}$/.test(message.requestId)
-  )
-    throw new AppError('MESSAGE', 'Invalid summary request.');
-  const cached = state.history.find((item) => item.id === message.requestId);
-  if (cached)
-    return {
-      summary: cached.text,
-      stats: activityStats(state.activity),
-      xp: activityStats(state.activity).total * 50,
-      firstMilestone: false
-    };
-  // One in-flight sandbox action per credential, including overlapping pill
-  // clicks and native shortcut events. Recent request IDs are deduplicated
-  // against the bounded history without retaining an extra request log.
-  const activeKey = String(state.credentialRevision);
-  if (activePractice.has(activeKey))
-    throw new AppError('BUSY', 'Your summary is already on its way.');
-  activePractice.add(activeKey);
-  try {
-    const summary = await summarize(source, state.key);
-    let firstMilestone = false;
-    const updated = await store.update((current) => {
-      if (current.credentialRevision !== state.credentialRevision)
-        throw new AppError('CANCELLED', 'Your key changed. Try again.');
-      if (current.history.some((item) => item.id === message.requestId)) return current;
-      firstMilestone = !current.milestones.firstSummary;
-      const next = addSummary(
-        current,
-        summary,
-        wordCount(source),
-        Date.now(),
-        message.requestId
-      );
-      return {
-        ...next,
-        onboarding: { ...next.onboarding, step: 3, sandboxComplete: true }
-      };
-    });
-    const stats = activityStats(updated.activity);
-    return { summary, stats, xp: stats.total * 50, firstMilestone };
-  } finally {
-    activePractice.delete(activeKey);
-  }
-}
-
-async function appRequest(message) {
+async function appRequest(message, sender) {
   switch (message.type) {
     case 'GET_STATE': {
       const [stored, session, platform, commands] = await Promise.all([
@@ -327,9 +269,27 @@ async function appRequest(message) {
         connecting = false;
       }
     }
-    case 'SUMMARIZE_SANDBOX':
-      return runSandbox(message);
+    case 'START_PRACTICE': {
+      const state = await store.read();
+      if (!state.keyValidated)
+        throw new AppError('NO_KEY', 'Verify your Gemini key first.');
+      const guideId = sender.tab?.id || message.guideId;
+      if (!Number.isInteger(guideId))
+        throw new AppError('PRACTICE', 'Open practice from the welcome tab.');
+      try {
+        await practiceSessions.start(guideId);
+      } catch (error) {
+        throw new AppError('PRACTICE', error.message);
+      }
+      return { practice: await practiceSessions.status() };
+    }
+    case 'GET_PRACTICE':
+      return { practice: await practiceSessions.status() };
+    case 'END_PRACTICE':
+      await practiceSessions.end();
+      return { practice: await practiceSessions.status() };
     case 'FINISH_WELCOME':
+      await practiceSessions.end();
       await store.update((state) => {
         if (!state.keyValidated || !state.onboarding.sandboxComplete)
           throw new AppError('SANDBOX', 'Generate a live summary first.');
@@ -344,6 +304,7 @@ async function appRequest(message) {
       return {};
     case 'REMOVE_KEY':
       credentialEpoch++;
+      await practiceSessions.end();
       await store.update((state) => ({
         ...state,
         key: null,
@@ -354,6 +315,7 @@ async function appRequest(message) {
       return {};
     case 'RESET_ALL':
       credentialEpoch++;
+      await practiceSessions.end();
       await store.update((state) => ({
         ...initialState(),
         credentialRevision: state.credentialRevision + 1
@@ -379,7 +341,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     typeof message.type !== 'string'
   )
     return false;
-  appRequest(message).then(
+  appRequest(message, sender).then(
     (result) => respond({ ok: true, ...result }),
     (error) => respond({ ok: false, error: safeError(error) })
   );

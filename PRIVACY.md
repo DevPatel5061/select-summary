@@ -6,22 +6,23 @@ Select Summary has no analytics, advertising, telemetry, developer-run backend, 
 
 When you explicitly request a summary, the selected text and fixed summarization instructions are sent directly to Google's Gemini API over HTTPS. The API key authenticates that request in a header. Google also receives the network metadata associated with the request. Page URLs and titles are not included by the extension.
 
-After you accept the Google data notice and press **Verify & Continue**, one small connection-check request is sent to Gemini. Pasting, typing, and checking consent do not initiate requests. A successful check saves the key. An explicit sandbox summary sends the portion of the bundled article you select and displays the real response inside the welcome page. Successful summaries count toward local history, activity, and XP; validation and demo browser controls do not. Each action makes one request, and oversized summaries are shortened locally. Failed requests do not retry automatically.
+After you accept the Google data notice and press **Verify & Continue**, one small connection-check request is sent to Gemini. Pasting, typing, and checking consent do not initiate requests. A successful check saves the key. An explicit practice summary sends the text you select on either actual article and displays the response on that webpage. Successful summaries count toward local history, activity, and XP; verification and walkthroughs do not. Each action makes one request, and oversized summaries are shortened locally. Failed requests do not retry automatically.
 
 Google controls its API processing and retention. Under its free-tier terms, inputs and responses may be used to improve products and may be reviewed by people, subject to regional and account terms. Do not submit sensitive, personal, or confidential information. Consult [Google's API terms](https://ai.google.dev/gemini-api/terms) for the terms that apply to you.
 
 ## What stays on your device
 
-The extension stores the following in `chrome.storage.local`, restricted to trusted extension contexts:
+The extension stores the following locally, restricted to trusted extension contexts. Temporary practice IDs use session storage; other entries use `chrome.storage.local`:
 
-| Data                                                                   | Purpose                                                         |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Your Gemini API key                                                    | Authenticate requests you initiate                              |
-| The latest 10 summaries and available timestamps                       | Local summary history                                           |
-| Original/summary word counts                                           | Estimate reading time saved without retaining source selections |
-| Daily summary counts and estimated seconds saved                       | Local activity chart, streaks, and personal bests               |
-| Three-step welcome progress, verification status, and a schema version | Resume setup and preserve upgrades                              |
-| First Summary milestone                                                | Remember the first successful summary after history is cleared  |
+| Data                                                                   | Purpose                                                                                   |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Your Gemini API key                                                    | Authenticate requests you initiate                                                        |
+| The latest 10 summaries and available timestamps                       | Local summary history                                                                     |
+| Original/summary word counts                                           | Estimate reading time saved without retaining source selections                           |
+| Daily summary counts and estimated seconds saved                       | Local activity chart, streaks, and personal bests                                         |
+| Three-step welcome progress, verification status, and a schema version | Resume setup and preserve upgrades                                                        |
+| Temporary practice window/tab IDs in session storage                   | Scope the extra-tab rule and recognize successful practice; removed when the session ends |
+| First Summary milestone                                                | Remember the first successful summary after history is cleared                            |
 
 Original selections are used transiently for API processing; they are not separately saved in history. **Summaries themselves may contain information from the original selection.** Local data is not sent to the developer or synchronized by the extension. Chrome's local storage is not an encrypted vault: someone with access to your browser profile or device may be able to access it.
 
@@ -43,8 +44,10 @@ Google AI Studio and documentation links open external websites with their own t
 
 ## Welcome and rewards
 
-The welcome tab opens locally on first installation, not on updates. Its Chrome-style demo has three fixed pages built from bundled HTML and original practice prose. The Wikipedia and Web Store representations do not load those sites or access your accounts or external page contents. Canada facts were checked against Wikipedia; no Wikipedia text or images are bundled. The address display is read-only and the demo cannot create tabs or install extensions.
+The welcome tab opens locally on first installation, not on updates. AI Studio and pinning walkthroughs are bundled illustrations. Their cursors operate illustrated controls only, never your Google account or actual Chrome toolbar. Playing them does not contact Gemini or award activity.
 
-XP is derived from local summary counts; XP and milestones are never transmitted. Switching demo tabs, opening help, using unavailable controls, and resetting practice do not contact Google or award activity. Explicitly summarizing a selected paragraph makes a Gemini request and counts as another summary. A request already sent continues if you change demo tabs or reset the view; its result is saved to local history.
+Choosing **Open practice window** moves the onboarding tab into a dedicated Chrome window and opens the actual GeeksforGeeks hash-table article and Wikipedia Toronto article. Those websites make their normal network requests and follow their own privacy and cookie policies. The extension does not copy, proxy, or remotely stream them. Only text you explicitly summarize is sent to Gemini; page URLs and titles are not included in API requests.
 
-Finishing the welcome guide closes its tab or shows a new tab page; it never opens a third-party sample site. The pin reminder is a bundled illustration. Browser-wide keyboard commands remain under the real browser's control.
+Temporary IDs in `chrome.storage.session` identify the practice window and its three tabs. Newly created extra tabs are closed only within that window. The extension does not request broader URL-reading permissions, restrict navigation in existing tabs, or store browsing history. Exit, completion, movement/closure of a practice tab, or leaving the guide stops restrictions. Existing personal tabs moved in are preserved. Interrupted setup releases the guard safely; a worker restart can resume a fully established session.
+
+Successful summaries count toward history, XP, streaks, and milestones on your device. A request already sent to Google continues if you exit practice; its result can still be saved locally. Finishing closes the guide tab while leaving the actual article tabs available for normal browsing. If the guide is its window’s only tab, finishing shows a new tab page instead.

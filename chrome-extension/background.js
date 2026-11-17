@@ -1,6 +1,6 @@
 import {
   AppError,
-  SAMPLE_TEXT,
+  DEMO_PAGES,
   activityStats,
   addSummary,
   initialState,
@@ -195,8 +195,12 @@ async function runSandbox(message) {
     throw new AppError('SANDBOX', 'Choose a sandbox summarization action.');
   const source = validateSelection(message.selection);
   const normalize = (value) => value.replace(/\s+/g, ' ').trim();
-  if (!normalize(SAMPLE_TEXT).includes(normalize(source)))
-    throw new AppError('SANDBOX', 'Highlight text inside the sample article.');
+  if (
+    !Object.values(DEMO_PAGES).some((page) =>
+      normalize(page.text).includes(normalize(source))
+    )
+  )
+    throw new AppError('SANDBOX', 'Highlight text inside one of the demo pages.');
   const state = await store.read();
   if (!state.key || !state.keyValidated)
     throw new AppError('NO_KEY', 'Verify your Gemini key first.');

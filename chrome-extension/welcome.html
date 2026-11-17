@@ -10,254 +10,103 @@
   <body>
     <header class="site-header">
       <span class="wordmark">Select<span>Summary</span></span>
-      <span class="header-note">Your key. Local history. No extension tracking.</span>
     </header>
-
     <main class="welcome-layout" aria-busy="true" id="welcome-main">
-      <div class="progress-heading">
-        <p id="step-label">Step 1 of 3</p>
-        <span>YOUR SETUP</span>
-      </div>
+      <p class="progress-heading" id="step-label">Step 1 of 3</p>
       <nav class="progress" aria-label="Setup progress">
         <button class="step-tab" data-step="1" aria-current="step">
-          <span class="step-number">1</span><span>Connect</span>
+          <span class="step-number">1</span>Connect
         </button>
         <button class="step-tab" data-step="2" disabled>
-          <span class="step-number">2</span><span>Try it</span>
+          <span class="step-number">2</span>Try it
         </button>
         <button class="step-tab" data-step="3" disabled>
-          <span class="step-number">3</span><span>Make it a habit</span>
+          <span class="step-number">3</span>Pin
         </button>
       </nav>
-
       <div id="boot" class="boot-message" role="status">Getting your setup ready…</div>
       <p id="page-error" class="error-message" role="alert" hidden></p>
 
       <section
-        class="wizard-card"
+        class="wizard-card connect-step"
         id="connect-step"
         aria-labelledby="connect-title"
         hidden
       >
-        <div class="connect-layout">
-          <div class="connect-copy">
-            <span class="free-badge">100% Free — No Credit Card Required</span>
-            <h1 id="connect-title" tabindex="-1">Connect Gemini.</h1>
-            <p class="lead">One key to start summarizing.</p>
-            <p class="fine-print">
-              Use an eligible free-tier project with billing disabled. Google’s limits
-              apply.
-            </p>
-
-            <button id="open-studio" class="button secondary" data-icon="expand">
+        <h1 id="connect-title" tabindex="-1">Add your Gemini key.</h1>
+        <div id="verified-key" class="verified-key" hidden>
+          <p id="saved-key-label"></p>
+          <button id="replace-key" class="text-button">Change key</button>
+        </div>
+        <form id="key-form">
+          <label for="api-key">Gemini API key</label>
+          <div class="key-input">
+            <input
+              id="api-key"
+              type="password"
+              placeholder="Paste your API key"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="256"
+            />
+            <button
+              id="reveal-key"
+              class="icon-button"
+              type="button"
+              data-icon="eye"
+              aria-label="Show entered key"
+              aria-pressed="false"
+            ></button>
+          </div>
+          <p id="stored-key-hint" class="fine-print" hidden></p>
+          <details id="key-help" class="key-help">
+            <summary>Get a key</summary>
+            <ol>
+              <li>Sign in to Google AI Studio.</li>
+              <li>Create or copy a key from a project with billing off.</li>
+              <li>Return here and paste it above.</li>
+            </ol>
+            <button
+              id="open-studio"
+              class="button secondary"
+              type="button"
+              data-icon="expand"
+            >
               Open Google AI Studio
             </button>
-            <ol class="instruction-list">
-              <li>
-                <button class="instruction active" data-guide="keys">
-                  <span>01</span
-                  ><span
-                    ><strong>Open AI Studio</strong
-                    ><small>Sign in with your Google account.</small></span
-                  >
-                </button>
-              </li>
-              <li>
-                <button class="instruction" data-guide="create">
-                  <span>02</span
-                  ><span
-                    ><strong>Create or copy your key</strong
-                    ><small>Choose a project without billing.</small></span
-                  >
-                </button>
-              </li>
-              <li>
-                <button class="instruction" data-guide="paste">
-                  <span>03</span
-                  ><span
-                    ><strong>Paste it here</strong
-                    ><small>Verify your key to continue.</small></span
-                  >
-                </button>
-              </li>
-            </ol>
-
-            <div id="verified-key" class="verified-key" hidden>
-              <div>
-                <strong>Gemini is connected.</strong>
-                <p id="saved-key-label"></p>
-              </div>
-              <button id="replace-key" class="text-button">Change key</button>
-            </div>
-
-            <form id="key-form">
-              <label for="api-key">Gemini API key</label>
-              <div class="key-input">
-                <input
-                  id="api-key"
-                  type="password"
-                  placeholder="Paste your API key"
-                  autocomplete="off"
-                  autocapitalize="none"
-                  spellcheck="false"
-                  maxlength="256"
-                /><button
-                  id="reveal-key"
-                  class="icon-button"
-                  type="button"
-                  data-icon="eye"
-                  aria-label="Show entered key"
-                  aria-pressed="false"
-                ></button>
-              </div>
-              <p id="stored-key-hint" class="fine-print" hidden></p>
-              <label class="consent"
-                ><input id="google-consent" type="checkbox" /><span
-                  >I agree to send the connection check and selected text to Google.
-                  Free-tier content may be used for product improvement. Google’s
-                  <a
-                    href="https://ai.google.dev/gemini-api/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >data terms</a
-                  >
-                  and possible API charges apply.</span
-                ></label
-              >
-              <p id="key-status" class="form-message" role="status"></p>
-              <button
-                id="verify-key"
-                class="button primary full-width"
-                type="submit"
-                disabled
-              >
-                Verify &amp; Save Key
-              </button>
-            </form>
-            <button
-              id="continue-connect"
-              class="button primary full-width"
-              data-icon="arrow"
-              hidden
-            >
-              Continue
-            </button>
-          </div>
-
-          <div class="guide-column">
-            <div class="visual-heading">
-              <span>Follow along in Google AI Studio</span
-              ><button
-                id="guide-replay"
-                class="icon-button"
-                data-icon="arrow"
-                aria-label="Replay API key walkthrough"
-                title="Replay walkthrough"
-              ></button>
-            </div>
-            <div
-              class="studio-guide"
-              id="studio-guide"
-              role="img"
-              aria-label="Illustrated AI Studio API Keys page, create-key dialog, and copy action"
-            >
-              <div class="browser-toolbar">
-                <span class="browser-dots" aria-hidden="true"><i></i><i></i><i></i></span
-                ><span class="browser-address" id="studio-address"
-                  >aistudio.google.com/api-keys</span
-                >
-              </div>
-              <div class="studio-view" aria-hidden="true">
-                <aside class="studio-sidebar">
-                  <strong>Google AI Studio</strong><span>‹ &nbsp;Dashboard</span
-                  ><small>PROJECT</small><span class="studio-active">API Keys</span
-                  ><span>Projects</span><small>USAGE &amp; BILLING</small
-                  ><span>Usage</span><span>Rate Limit</span><span>Spend</span
-                  ><span>Billing</span><small>OBSERVE</small
-                  ><span>Logs and Datasets</span>
-                </aside>
-                <div class="studio-content">
-                  <div class="studio-title">
-                    <h2>API Keys</h2>
-                    <button id="mock-create" class="studio-button" tabindex="-1">
-                      Create API key
-                    </button>
-                  </div>
-                  <div class="studio-filters">
-                    <span>Group by &nbsp;<b>• API Key</b> &nbsp; Project</span
-                    ><span>All projects &nbsp;⌄</span>
-                  </div>
-                  <div class="studio-table">
-                    <div class="studio-table-heading">
-                      <span>Key</span><span>Project</span><span>Billing Tier</span>
-                    </div>
-                    <div>
-                      <span class="studio-key">••••••••</span
-                      ><span>Default Gemini Project</span><span>Free tier</span>
-                    </div>
-                    <div>
-                      <span class="studio-key">••••••••</span><span>Select Summary</span
-                      ><span>Free tier</span>
-                    </div>
-                  </div>
-                  <p class="studio-hint">Can’t find your API keys here?</p>
-                  <span class="studio-import">Import projects</span>
-                </div>
-              </div>
-              <div class="studio-overlay" id="create-overlay" aria-hidden="true" hidden>
-                <div class="studio-dialog">
-                  <h3>Create a new key</h3>
-                  <span class="mock-label">Name your key</span>
-                  <div class="mock-field" id="mock-name">Select Summary</div>
-                  <span class="mock-label">Choose an imported project</span
-                  ><button id="mock-project" class="mock-field" tabindex="-1">
-                    Default Gemini Project <span>⌄</span>
-                  </button>
-                  <div class="mock-dialog-actions">
-                    <span>Cancel</span
-                    ><button id="mock-create-confirm" class="studio-button" tabindex="-1">
-                      Create key
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="studio-overlay" id="copy-overlay" aria-hidden="true" hidden>
-                <div class="studio-dialog">
-                  <h3>Your API key</h3>
-                  <p class="mock-description">Select Summary · Default Gemini Project</p>
-                  <div class="mock-key-row">
-                    <code>••••••••••••••••••••••••</code
-                    ><button
-                      id="mock-copy"
-                      class="studio-button"
-                      tabindex="-1"
-                      data-icon="copy"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <p class="mock-description">Keep your API key private.</p>
-                </div>
-              </div>
-              <div class="paste-scene" id="paste-scene" aria-hidden="true" hidden>
-                <span class="wordmark">Select<span>Summary</span></span>
-                <h3>Add your API key</h3>
-                <span class="mock-label">Gemini API key</span>
-                <div class="mock-field" id="mock-paste">
-                  <span id="mock-paste-value"></span><span class="typing-caret"></span>
-                </div>
-                <div class="mock-connect">Verify &amp; Save Key</div>
-              </div>
-              <div class="animated-cursor" id="studio-cursor" aria-hidden="true"></div>
-            </div>
-            <p class="visual-caption" id="guide-caption" aria-live="polite">
-              Open the API Keys page. Your Google account stays in Google.
-            </p>
-            <p class="illustration-note">
-              Interactive illustration. No account recording or real keys.
-            </p>
-          </div>
-        </div>
+          </details>
+          <p class="fine-print free-note">
+            Free tier available. Keep project billing off; Google’s limits apply.
+          </p>
+          <label class="consent"
+            ><input id="google-consent" type="checkbox" /><span
+              >Google receives the text you summarize and may use free-tier content for
+              product improvement or human review. I agree to Google’s
+              <a
+                href="https://ai.google.dev/gemini-api/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                >data terms</a
+              >.</span
+            ></label
+          >
+          <p id="key-status" class="form-message" role="status"></p>
+          <button
+            id="verify-key"
+            class="button primary full-width"
+            type="submit"
+            disabled
+          >
+            Verify &amp; Continue
+          </button>
+          <button id="cancel-key" class="text-button cancel-key" type="button" hidden>
+            Keep current key
+          </button>
+        </form>
+        <button id="continue-connect" class="button primary full-width" hidden>
+          Continue
+        </button>
       </section>
 
       <section
@@ -267,89 +116,316 @@
         hidden
       >
         <div class="section-header">
-          <div>
-            <h1 id="sandbox-title" tabindex="-1">Make your first summary.</h1>
-            <p class="lead">
-              Highlight a few sentences. Choose Summarize, or use your shortcut.
-            </p>
-          </div>
-          <button id="watch-demo" class="button secondary" data-icon="arrow">
-            Watch demo
-          </button>
+          <h1 id="sandbox-title" tabindex="-1">Try Select Summary.</h1>
+          <p class="lead">Highlight text, then right-click → Summarize selection.</p>
         </div>
         <div class="sandbox-tools">
-          <span id="demo-label">Your live sandbox</span>
-          <div
-            class="shortcut-keys"
-            id="shortcut-keys"
-            aria-label="Your summarization shortcut"
-          ></div>
+          <span class="local-label">Interactive demo · 3 fixed tabs</span>
+          <div class="shortcut-guide">
+            <span>Or press</span>
+            <div
+              id="shortcut-keys"
+              class="shortcut-keys"
+              aria-label="Your summarization shortcut"
+            ></div>
+          </div>
         </div>
-        <div class="article-browser" id="article-browser">
-          <div class="browser-toolbar">
-            <span class="browser-dots" aria-hidden="true"><i></i><i></i><i></i></span
-            ><span class="browser-address">Practice article</span
-            ><span class="reader-label">READING VIEW</span>
+
+        <div
+          id="practice-browser"
+          class="practice-browser"
+          role="region"
+          aria-label="Interactive Chrome-style browser demo"
+        >
+          <div class="browser-tabs" role="tablist" aria-label="Demo browser tabs">
+            <button
+              id="tab-summary"
+              role="tab"
+              data-demo-tab="summary"
+              aria-controls="page-summary"
+              aria-selected="false"
+              tabindex="-1"
+            >
+              <img src="icon/icon.png" width="16" height="16" alt="" /><span
+                >Select Summary</span
+              >
+            </button>
+            <button
+              id="tab-store"
+              role="tab"
+              data-demo-tab="store"
+              aria-controls="page-store"
+              aria-selected="false"
+              tabindex="-1"
+            >
+              <span class="store-tab-icon" aria-hidden="true"></span
+              ><span>Web Store</span>
+            </button>
+            <button
+              id="tab-canada"
+              role="tab"
+              data-demo-tab="canada"
+              aria-controls="page-canada"
+              aria-selected="true"
+            >
+              <span class="wiki-tab-icon" aria-hidden="true">W</span
+              ><span>Canada – Wikipedia</span>
+            </button>
           </div>
-          <article class="sample-article">
-            <p class="article-category">CITY LIFE</p>
-            <h2>A little green changes a city.</h2>
-            <p class="article-byline">1 minute read &nbsp;·&nbsp; Sample article</p>
-            <p
-              id="sample-text"
-              tabindex="0"
-              aria-label="Sample article text. Select text to summarize."
-            ></p>
-          </article>
-          <button id="quick-pill" class="quick-pill" data-icon="arrow" hidden>
-            Summarize
-          </button>
-          <div id="selection-menu" class="selection-menu" role="menu" hidden>
-            <span class="menu-copy" aria-hidden="true">Copy</span
-            ><button id="menu-summarize" role="menuitem">Summarize selection</button>
+          <div class="demo-toolbar">
+            <button
+              class="icon-button"
+              id="demo-back"
+              data-icon="back"
+              aria-label="Back within demo"
+              disabled
+            ></button>
+            <button
+              class="icon-button"
+              id="demo-forward"
+              data-icon="arrow"
+              aria-label="Forward within demo"
+              disabled
+            ></button>
+            <button
+              class="icon-button"
+              id="reset-practice"
+              data-icon="reload"
+              aria-label="Reset practice"
+              title="Reset practice"
+            ></button>
+            <input
+              id="demo-address"
+              class="demo-address"
+              aria-label="Demo address, read only"
+              readonly
+              value="en.wikipedia.org/wiki/Canada"
+              spellcheck="false"
+            />
+            <button
+              class="icon-button demo-menu-button"
+              data-unavailable="Only these three pages are included. New tabs, navigation, and installation aren’t part of this demo."
+              aria-label="About this demo"
+            >
+              ⋮
+            </button>
           </div>
-          <div
-            id="article-cursor"
-            class="animated-cursor"
-            aria-hidden="true"
-            hidden
-          ></div>
+          <div id="browser-viewport" class="browser-viewport">
+            <div id="browser-scroll" class="browser-scroll">
+              <section
+                class="demo-page summary-page"
+                id="page-summary"
+                role="tabpanel"
+                aria-labelledby="tab-summary"
+                hidden
+              >
+                <header class="demo-site-header">
+                  <span class="wordmark">Select<span>Summary</span></span
+                  ><button class="text-button" data-demo-go="store">
+                    Chrome Web Store
+                  </button>
+                </header>
+                <article class="summary-site-content">
+                  <p class="site-category">SELECT SUMMARY</p>
+                  <h2>Summarize text<br />you highlight.</h2>
+                  <p
+                    data-sample="summary"
+                    tabindex="0"
+                    aria-label="Select Summary practice text"
+                  ></p>
+                  <button class="button primary" data-demo-go="canada">
+                    Try it on Wikipedia
+                  </button>
+                  <div class="site-features">
+                    <span>Short summaries</span><span>Local history</span
+                    ><span>No extension tracking</span>
+                  </div>
+                </article>
+              </section>
+              <section
+                class="demo-page store-page"
+                id="page-store"
+                role="tabpanel"
+                aria-labelledby="tab-store"
+                hidden
+              >
+                <header class="store-header">
+                  <strong>Chrome Web Store</strong
+                  ><button
+                    class="text-button"
+                    data-unavailable="Search isn’t available in this demo."
+                  >
+                    Search extensions
+                  </button>
+                </header>
+                <nav class="store-nav" aria-label="Web Store preview navigation">
+                  <button
+                    aria-current="page"
+                    data-unavailable="Only the Select Summary listing is included in this demo."
+                  >
+                    Extensions</button
+                  ><button data-unavailable="Themes aren’t available in this demo.">
+                    Themes
+                  </button>
+                </nav>
+                <article class="store-content">
+                  <div class="listing-heading">
+                    <img src="icon/icon.png" width="64" height="64" alt="" />
+                    <div>
+                      <h2>Select Summary</h2>
+                      <p>Dev Patel · Tools</p>
+                    </div>
+                    <button
+                      class="button secondary"
+                      data-unavailable="Select Summary is already installed. Installation isn’t part of this demo."
+                    >
+                      Added to Chrome
+                    </button>
+                  </div>
+                  <div class="listing-tabs">
+                    <span>Overview</span
+                    ><button data-unavailable="Reviews aren’t available in this demo.">
+                      Reviews</button
+                    ><button data-unavailable="Support isn’t available in this demo.">
+                      Support
+                    </button>
+                  </div>
+                  <h3>Summarize selected text with Gemini.</h3>
+                  <p
+                    data-sample="store"
+                    tabindex="0"
+                    aria-label="Web Store practice text"
+                  ></p>
+                  <div class="store-privacy">
+                    <h3>Privacy</h3>
+                    <p>Your history and reading activity stay on your device.</p>
+                  </div>
+                </article>
+              </section>
+              <section
+                class="demo-page wiki-page"
+                id="page-canada"
+                role="tabpanel"
+                aria-labelledby="tab-canada"
+              >
+                <header class="wiki-header">
+                  <div>
+                    <span class="wiki-wordmark">Wikipedia</span
+                    ><span class="wiki-tagline">The Free Encyclopedia</span>
+                  </div>
+                  <button
+                    class="wiki-search"
+                    data-unavailable="Wikipedia search isn’t available in this demo."
+                  >
+                    Search Wikipedia</button
+                  ><button
+                    class="text-button"
+                    data-unavailable="Account actions aren’t available in this demo."
+                  >
+                    Log in
+                  </button>
+                </header>
+                <div class="wiki-layout">
+                  <aside class="wiki-contents">
+                    <strong>Contents</strong
+                    ><button data-demo-scroll="top">Beginning</button
+                    ><button data-demo-scroll="geography">Geography</button
+                    ><button data-demo-scroll="facts">Quick facts</button>
+                  </aside>
+                  <article class="wiki-article">
+                    <h2 id="canada-top">Canada</h2>
+                    <div class="wiki-article-tabs">
+                      <span>Article</span
+                      ><button
+                        data-unavailable="Discussion isn’t available in this demo."
+                      >
+                        Talk</button
+                      ><span class="wiki-read">Read</span
+                      ><button data-unavailable="Editing isn’t available in this demo.">
+                        View source</button
+                      ><button
+                        data-unavailable="Page history isn’t available in this demo."
+                      >
+                        View history
+                      </button>
+                    </div>
+                    <p class="wiki-byline">From Wikipedia, the free encyclopedia</p>
+                    <div class="wiki-article-content">
+                      <div class="wiki-prose">
+                        <p
+                          data-sample="canada"
+                          id="sample-text"
+                          tabindex="0"
+                          aria-label="Canada practice article text"
+                        ></p>
+                        <h3 id="canada-geography">Geography</h3>
+                        <p>
+                          Canada spans three ocean coastlines and a wide range of
+                          landscapes.
+                        </p>
+                        <p class="article-source">
+                          Local practice page with original text. Fact reference:
+                          en.wikipedia.org/wiki/Canada.
+                        </p>
+                      </div>
+                      <aside class="canada-infobox" id="canada-facts">
+                        <h3>Canada</h3>
+                        <p>Country in North America</p>
+                        <dl>
+                          <div>
+                            <dt>Capital</dt>
+                            <dd>Ottawa</dd>
+                          </div>
+                          <div>
+                            <dt>Largest city</dt>
+                            <dd>Toronto</dd>
+                          </div>
+                          <div>
+                            <dt>Provinces</dt>
+                            <dd>10</dd>
+                          </div>
+                          <div>
+                            <dt>Territories</dt>
+                            <dd>3</dd>
+                          </div>
+                          <div>
+                            <dt>Official languages</dt>
+                            <dd>English · French</dd>
+                          </div>
+                        </dl>
+                      </aside>
+                    </div>
+                  </article>
+                </div>
+              </section>
+            </div>
+            <div
+              id="selection-menu"
+              class="selection-menu"
+              role="menu"
+              aria-label="Selected text actions"
+              hidden
+            >
+              <button id="menu-copy" role="menuitem" data-icon="copy">Copy</button>
+              <div class="menu-separator" role="separator"></div>
+              <button id="menu-summarize" role="menuitem">Summarize selection</button>
+            </div>
+            <div class="demo-notice" id="demo-notice" role="status" hidden></div>
+          </div>
         </div>
         <div class="sandbox-bottom">
-          <p class="fine-print">
-            On webpages, use right-click → Summarize selection or your shortcut. This
-            quick-action pill is for practice here.
-          </p>
+          <p id="sandbox-status" class="form-message" role="status"></p>
           <button id="show-summary" class="text-button" hidden>Show summary again</button>
         </div>
-        <p id="sandbox-status" class="form-message" role="status"></p>
         <div id="summary-reward" class="summary-reward" role="status" hidden>
-          <div>
-            <span class="reward-value" id="reward-xp">+50 XP</span
-            ><span class="reward-label">Summary earned</span>
-          </div>
-          <div>
-            <span class="reward-value" id="reward-streak">1-day streak</span
-            ><span class="reward-label">Your reading habit</span>
-          </div>
-          <div>
-            <span class="milestone-label" id="reward-badge">First Summary</span
-            ><span class="reward-label" id="reward-badge-note">Milestone unlocked</span>
-          </div>
+          <span id="reward-xp">+50 XP</span><span id="reward-streak">1-day streak</span
+          ><span id="reward-badge">First Summary</span>
         </div>
         <div class="wizard-actions">
           <button class="button secondary" id="back-connect">Back</button
-          ><button
-            class="button primary"
-            id="continue-sandbox"
-            data-icon="arrow"
-            disabled
-          >
-            Continue
-          </button>
+          ><button class="button primary" id="continue-sandbox" disabled>Continue</button>
         </div>
       </section>
-
       <section
         class="wizard-card pin-step"
         id="pin-step"

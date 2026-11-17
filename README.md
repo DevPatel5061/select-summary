@@ -2,9 +2,9 @@
 
 A lightweight Chrome extension that summarizes highlighted text with Gemini. Bring your own API key, keep your history and activity locally, and get a concise 15–30 word summary.
 
-Version **3.3.0** is available in this source branch. The [Chrome Web Store listing](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd) may contain an earlier release until a new package is published.
+Version **3.4.0** is available in this source branch. The [Chrome Web Store listing](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd) may contain an earlier release until a new package is published.
 
-This release restores the AI Studio walkthrough beside a cleaner setup form, moves practice into a real Chrome window, and animates the pinning guide.
+This release enlarges onboarding, loops the AI Studio and pinning walkthroughs, and brings live summarization back into a local two-article browser demo.
 
 ## Install
 
@@ -27,23 +27,19 @@ Reloading or updating the extension does not automatically open another welcome 
 1. **Connect:** Paste your Gemini key into the form on the left. The walkthrough on the right shows how to create and copy it. Expand **Get a key** for a direct [Google AI Studio](https://aistudio.google.com/apikey) button.
 2. Use an eligible free-tier project **without billing enabled**. Google's free tier does not require a credit card, but regional availability, project verification, and quotas apply. See [Google's billing guide](https://ai.google.dev/gemini-api/docs/billing).
 3. Paste your key, accept the Google data notice, then press **Verify & Continue**. Only this explicit action sends a small validation request. A failed check stays inline and preserves an existing key.
-4. **Try it:** Choose **Open practice window**. Select Summary moves the onboarding tab into a dedicated Chrome window and opens exactly two actual websites:
+4. **Try it:** Highlight paragraph text inside the embedded demo and choose **Summarize selection** from Chrome’s native right-click menu, or press your displayed shortcut. The two tabs contain original practice adaptations of exactly these sources:
    - [GeeksforGeeks: Hash Table](https://www.geeksforgeeks.org/dsa/hash-table-data-structure/)
    - [Wikipedia: Toronto](https://en.wikipedia.org/wiki/Toronto)
-5. Highlight text on either article, then use Chrome’s normal right-click menu → **Summarize selection**, or your assigned shortcut. The production summary card appears on the actual webpage. One successful practice summary unlocks Continue, updates local activity, awards 50 XP, and preserves the First Summary milestone.
-6. Return to the **Select Summary** tab, choose Continue, and follow the animated toolbar pinning guide. Actual pinning is done through Chrome’s own Extensions menu. Choose **Start Browsing & Earning Streaks** to finish.
+5. Gemini generates a real response using your connected key. It appears inside the demo using the same summary card as normal webpages. One successful summary updates local history and activity and unlocks Continue. There are no canned demo summaries, custom context menus, or floating Summarize buttons.
+6. **Pin:** Watch the looping pinning illustration, then pin through Chrome’s actual toolbar if desired. Choose **Finish onboarding** to close the onboarding tab.
 
-The key walkthrough is a bundled illustration, not a recording of a Google account. Pasting, opening help, and playing either walkthrough do not contact Gemini. Verification happens only after **Verify & Continue**.
+Both walkthroughs loop automatically while visible, with no replay controls or numbered pinning callouts. Reduced-motion mode displays static illustrations. Opening help, switching demo tabs, resetting the view, and watching animations make no API requests. Key verification remains an explicit **Verify & Continue** action.
 
-### Practice window restrictions
+### Embedded practice
 
-New extra tabs created inside the dedicated practice window close automatically while practice is active. This does not affect tabs created in other windows. Navigation inside existing tabs is unrestricted; the extension requests no additional URL-reading permissions.
+The demo uses bundled HTML and original condensed prose based on the two linked articles. It does not load, frame, proxy, or copy the full websites, and it opens no extra Chrome windows or website tabs. Their exact source URLs appear in the read-only address display. Selecting text uses normal browser selection and Chrome’s native context menu; the extension does not intercept right-clicks.
 
-Choose **Exit practice** to stop the restriction immediately. Continuing to the pin step or finishing also stops it. Closing/moving a practice tab or leaving the onboarding page ends restrictions. Existing personal tabs dragged into the practice window are preserved and restrictions stop. A newly created tab moved out before the guard processes it is also preserved.
-
-The temporary session survives a worker restart. An interrupted setup releases restrictions rather than trying to close unknown tabs. Exiting or finishing leaves website tabs intact for normal browsing. Returning to the guide and reopening practice after exit starts a new dedicated session.
-
-The articles are real websites with their own network requests, cookies, advertising, and privacy practices. No pages are copied, framed, proxied, or remotely streamed by the extension. If one article is unavailable, use the other. No substitute websites are opened.
+Only your explicitly selected practice text is sent to Gemini. Tab switching and Reset do not delete saved activity or undo onboarding progress. A response finishing after a tab switch or reset is saved without unexpectedly reopening a card; **Show summary again** restores the current article’s saved result. Browsing and summarization on ordinary webpages continue to work normally.
 
 ## Use
 
@@ -72,7 +68,7 @@ Time saved estimates the positive difference between source and summary reading 
 
 The extension has no fees, subscriptions, ads, tracking, developer-run backend, or account system. Fonts use your operating system; assets are bundled.
 
-Gemini is a separate Google service. Connecting sends one small validation request. Each explicit practice or webpage summary sends the selected text directly to Google. Opening practice also loads the two supplied websites normally in Chrome. Free-tier inputs and outputs may be used for product improvement and human review; billing-enabled projects can incur charges. The extension cannot verify project billing status or guarantee Google's future pricing. Avoid sensitive text.
+Gemini is a separate Google service. Connecting sends one small validation request. Each explicit practice or webpage summary sends the selected text directly to Google. The embedded demo does not contact either source website. Free-tier inputs and outputs may be used for product improvement and human review; billing-enabled projects can incur charges. The extension cannot verify project billing status or guarantee Google's future pricing. Avoid sensitive text.
 
 Read [Privacy and data handling](PRIVACY.md), [Google's API terms](https://ai.google.dev/gemini-api/terms), and [pricing](https://ai.google.dev/gemini-api/docs/pricing).
 
@@ -80,16 +76,16 @@ Read [Privacy and data handling](PRIVACY.md), [Google's API terms](https://ai.go
 
 The repository contains the active extension and its installation, privacy, and license documents. Development test suites, package manifests, dependencies, reports, and screenshots have been removed.
 
-| Component                                                               | Responsibility                                                             |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `welcome.html`, `welcome.css`, `welcome.js`, `walkthroughs.js`          | Setup, AI Studio/pinning illustrations, and the real-window practice guide |
-| `popup.html`, `bootstrap.js`, `interface.html`, `popup.js`, `popup.css` | Toolbar and standalone dashboard, history, and settings                    |
-| `practice-session.js`                                                   | Dedicated Chrome window, temporary session IDs, and scoped extra-tab guard |
-| `background.js`                                                         | Validated requests, native command routing, Gemini calls, and persistence  |
-| `gemini.js`                                                             | Provider authentication, timeouts, safe errors, and concise output         |
-| `core.js`, `storage.js`                                                 | Local data migration, calendar activity, and serialized writes             |
-| `summary-card.js`, `summary.css`                                        | Shared, isolated summary card used by webpages and the sandbox             |
-| `content.js`                                                            | Validated webpage message listener and card lifecycle                      |
+| Component                                                               | Responsibility                                                                    |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `welcome.html`, `welcome.css`, `welcome.js`, `walkthroughs.js`          | Setup, AI Studio/pinning illustrations, and the real-window practice guide        |
+| `popup.html`, `bootstrap.js`, `interface.html`, `popup.js`, `popup.css` | Toolbar and standalone dashboard, history, and settings                           |
+| `demo-articles.js`, `article-demo.js`                                   | Bundled practice prose, two article tabs, real selection, and shared result cards |
+| `background.js`                                                         | Validated requests, native command routing, Gemini calls, and persistence         |
+| `gemini.js`                                                             | Provider authentication, timeouts, safe errors, and concise output                |
+| `core.js`, `storage.js`                                                 | Local data migration, calendar activity, and serialized writes                    |
+| `summary-card.js`, `summary.css`                                        | Shared, isolated summary card used by webpages and the sandbox                    |
+| `content.js`                                                            | Validated webpage message listener and card lifecycle                             |
 
 The runtime has no third-party dependencies. Source files use multiline formatting and comments around the selection, message-routing, storage, and timing behavior.
 
@@ -101,8 +97,8 @@ The model is `gemini-3.5-flash-lite`, centralized in `core.js`. Each summary mak
 
 - **Key check fails:** verify the complete key, Gemini access, restrictions, project eligibility, and region in AI Studio. Retry explicitly or paste a replacement.
 - **Quota exhausted:** check the project's limits and wait for reset. The extension never enables billing.
-- **Practice:** highlight text on either actual article and use Chrome’s native context menu or the assigned shortcut. Return to the Select Summary tab afterward; it will show Continue when a summary succeeds.
-- **Shortcut:** highlight text and press the displayed keys together. A practice result appears on the actual article webpage. Either right-click or the shortcut is enough to continue.
+- **Practice:** highlight paragraph text inside either demo tab and use Chrome’s native context menu or the shortcut. Keyboard users can focus the paragraph and select it with Ctrl/Command+A.
+- **Shortcut:** highlight text and press the displayed keys together. A practice result stays inside the embedded demo. Either right-click or the shortcut is enough to continue.
 - **No card:** open History; protected pages can block injection.
 - **Source changes:** reload the extension, refresh webpages, then open the welcome guide if needed. A browser restart may be needed to replace an older shortcut assignment.
 

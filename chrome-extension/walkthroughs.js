@@ -102,19 +102,11 @@ export function createWalkthroughs(onError) {
       scene === 'paste'
         ? 'Select Summary · Connect Gemini'
         : 'aistudio.google.com/api-keys';
-    document
-      .querySelectorAll('[data-guide]')
-      .forEach((button) =>
-        button.classList.toggle(
-          'active',
-          button.dataset.guide === (scene === 'copy' ? 'create' : scene)
-        )
-      );
     const captions = {
       keys: 'Open API Keys. Copy an existing key, or choose Create API key.',
       create: 'Name the key, choose an imported project, then click Create key.',
       copy: 'Copy your new key. Keep project billing disabled for the free tier.',
-      paste: 'Paste your key here, accept the data notice, then press Verify & Save Key.'
+      paste: 'Paste your key here, accept the data notice, then press Verify & Continue.'
     };
     $('#guide-caption').textContent = captions[scene];
   }
@@ -129,43 +121,56 @@ export function createWalkthroughs(onError) {
     const cursor = $('#studio-cursor');
     cursor.style.transform = 'translate(30px, 70px)';
     try {
-      if (scene === 'keys') {
-        await wait(500, signal);
-        await moveTo(cursor, $('#studio-guide'), $('#mock-create'), signal, 650);
-        await clickIllustration(cursor, $('#mock-create'), signal);
-        scene = 'create';
-      }
-      if (scene === 'create') {
-        $('#mock-name').textContent = '';
-        await moveTo(cursor, $('#studio-guide'), $('#mock-name'), signal);
-        for (const character of 'Select Summary') {
-          $('#mock-name').textContent += character;
+      while (!signal.aborted && step === 1) {
+        scene = 'keys';
+        projectList.hidden = true;
+        $('#mock-copy').lastChild.textContent = 'Copy';
+        showGuide(scene);
+        if (scene === 'keys') {
+          await wait(500, signal);
+          await moveTo(cursor, $('#studio-guide'), $('#mock-create'), signal, 650);
+          await clickIllustration(cursor, $('#mock-create'), signal);
+          scene = 'create';
+        }
+        if (scene === 'create') {
+          $('#mock-name').textContent = '';
+          await moveTo(cursor, $('#studio-guide'), $('#mock-name'), signal);
+          for (const character of 'Select Summary') {
+            $('#mock-name').textContent += character;
+            await wait(45, signal);
+          }
+          await moveTo(cursor, $('#studio-guide'), $('#mock-project'), signal);
+          await clickIllustration(cursor, $('#mock-project'), signal);
+          await wait(250, signal);
+          await moveTo(
+            cursor,
+            $('#studio-guide'),
+            $('#mock-project-option'),
+            signal,
+            240
+          );
+          await clickIllustration(cursor, $('#mock-project-option'), signal);
+          await moveTo(cursor, $('#studio-guide'), $('#mock-create-confirm'), signal);
+          await clickIllustration(cursor, $('#mock-create-confirm'), signal);
+          await wait(350, signal);
+          await moveTo(cursor, $('#studio-guide'), $('#mock-copy'), signal);
+          await clickIllustration(cursor, $('#mock-copy'), signal);
+          await wait(650, signal);
+          showGuide('paste');
+        }
+        $('#mock-paste-value').textContent = '';
+        await moveTo(cursor, $('#studio-guide'), $('#mock-paste'), signal);
+        cursor.classList.add('is-clicking');
+        await wait(160, signal);
+        cursor.classList.remove('is-clicking');
+        for (let index = 0; index < 18; index++) {
+          $('#mock-paste-value').textContent += '•';
           await wait(45, signal);
         }
-        await moveTo(cursor, $('#studio-guide'), $('#mock-project'), signal);
-        await clickIllustration(cursor, $('#mock-project'), signal);
-        await wait(250, signal);
-        await moveTo(cursor, $('#studio-guide'), $('#mock-project-option'), signal, 240);
-        await clickIllustration(cursor, $('#mock-project-option'), signal);
-        await moveTo(cursor, $('#studio-guide'), $('#mock-create-confirm'), signal);
-        await clickIllustration(cursor, $('#mock-create-confirm'), signal);
-        await wait(350, signal);
-        await moveTo(cursor, $('#studio-guide'), $('#mock-copy'), signal);
-        await clickIllustration(cursor, $('#mock-copy'), signal);
-        await wait(650, signal);
-        showGuide('paste');
+        await wait(1000, signal);
+        cursor.hidden = true;
+        await wait(700, signal);
       }
-      $('#mock-paste-value').textContent = '';
-      await moveTo(cursor, $('#studio-guide'), $('#mock-paste'), signal);
-      cursor.classList.add('is-clicking');
-      await wait(160, signal);
-      cursor.classList.remove('is-clicking');
-      for (let index = 0; index < 18; index++) {
-        $('#mock-paste-value').textContent += '•';
-        await wait(45, signal);
-      }
-      await wait(1000, signal);
-      cursor.hidden = true;
     } catch (error) {
       if (error.name !== 'AbortError') pageError(error);
     }
@@ -194,19 +199,6 @@ export function createWalkthroughs(onError) {
   $('#mock-copy').addEventListener('click', () => {
     $('#mock-copy').lastChild.textContent = 'Copied';
   });
-  $('#studio-guide').addEventListener('pointerdown', (event) => {
-    if (event.isTrusted) stopGuide();
-  });
-  $('#guide-replay').addEventListener('click', () => {
-    projectList.hidden = true;
-    void playGuide();
-  });
-  document.querySelectorAll('[data-guide]').forEach((button) =>
-    button.addEventListener('click', () => {
-      projectList.hidden = true;
-      void playGuide(button.dataset.guide);
-    })
-  );
 
   function stopPin() {
     pinRun?.abort();
@@ -227,14 +219,20 @@ export function createWalkthroughs(onError) {
     const cursor = $('#pin-cursor');
     cursor.style.transform = 'translate(30px, 30px)';
     try {
-      await wait(400, signal);
-      await moveTo(cursor, $('#pin-illustration'), $('#pin-extensions'), signal, 650);
-      await clickIllustration(cursor, $('#pin-extensions'), signal);
-      await wait(350, signal);
-      await moveTo(cursor, $('#pin-illustration'), $('#pin-example'), signal, 500);
-      await clickIllustration(cursor, $('#pin-example'), signal);
-      await wait(700, signal);
-      cursor.hidden = true;
+      while (!signal.aborted && step === 3) {
+        $('#pin-menu').hidden = true;
+        $('#pinned-example').hidden = true;
+        $('#pin-example').classList.remove('is-pinned');
+        await wait(400, signal);
+        await moveTo(cursor, $('#pin-illustration'), $('#pin-extensions'), signal, 650);
+        await clickIllustration(cursor, $('#pin-extensions'), signal);
+        await wait(350, signal);
+        await moveTo(cursor, $('#pin-illustration'), $('#pin-example'), signal, 500);
+        await clickIllustration(cursor, $('#pin-example'), signal);
+        await wait(700, signal);
+        cursor.hidden = true;
+        await wait(1400, signal);
+      }
     } catch (error) {
       if (error.name !== 'AbortError') pageError(error);
     }
@@ -247,9 +245,11 @@ export function createWalkthroughs(onError) {
     $('#pin-example').classList.toggle('is-pinned', pinned);
     $('#pinned-example').hidden = !pinned;
   });
-  $('#pin-replay').addEventListener('click', () => void playPin());
-  $('#pin-illustration').addEventListener('pointerdown', (event) => {
-    if (event.isTrusted) stopPin();
+  reducedMotion.addEventListener('change', () => {
+    stopGuide();
+    stopPin();
+    if (step === 1) void playGuide();
+    if (step === 3) void playPin();
   });
   return {
     show(next) {

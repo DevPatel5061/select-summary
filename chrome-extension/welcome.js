@@ -1,6 +1,7 @@
 import { activityStats } from './core.js';
 import { decorateButtons } from './icons.js';
 import { shortcutKeys, matchesShortcut } from './shortcuts.js';
+import { createArticleDemo } from './article-demo.js';
 import { createWalkthroughs } from './walkthroughs.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -10,14 +11,19 @@ let state;
 let step = 1;
 let verifying = false;
 let changingKey = false;
-let openingPractice = false;
 let snapshotSerial = 0;
 let confettiTimer;
 let keys = [];
 let shortcutSignature = '';
 let keyTimer;
+let resizeTimer;
 const downCodes = new Set();
 const walkthroughs = createWalkthroughs(pageError);
+const demo = createArticleDemo(async (fields) => {
+  const result = await request('SUMMARIZE_DEMO', fields);
+  await snapshot();
+  return result;
+});
 async function request(type, fields = {}) {
   let response;
   try {
@@ -89,26 +95,12 @@ function renderKeys(shortcut, platform) {
 }
 async function snapshot() {
   const serial = ++snapshotSerial;
-  const [result, practice] = await Promise.all([
-    request('GET_STATE'),
-    request('GET_PRACTICE')
-  ]);
+  const result = await request('GET_STATE');
   if (serial !== snapshotSerial) return;
   state = result.state;
   renderKeys(result.shortcut, result.platform);
   if (!verifying) updateConnect();
   $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete;
-  $('#start-practice').textContent = practice.practice.active
-    ? 'Return to articles'
-    : 'Open practice window';
-  $('#start-practice').disabled = openingPractice;
-  $('#end-practice').hidden =
-    !practice.practice.active || practice.practice.guideId !== guideTab?.id;
-  message(
-    $('#practice-status'),
-    practice.practice.message ||
-      (practice.practice.active ? 'Practice is open in this Chrome window.' : '')
-  );
   $('#summary-reward').hidden = !state.onboarding.sandboxComplete;
   if (state.onboarding.sandboxComplete) {
     $('#reward-streak').textContent =
@@ -123,16 +115,8 @@ async function showStep(next, { persist = true, focus = true } = {}) {
     await request('SET_WELCOME_STEP', { step: next });
     state.onboarding.step = next;
   }
-  // Leaving Try It must also release the guard when using the progress tabs,
-  // so opening AI Studio from Connect is never mistaken for an extra tab.
-  if (next !== 2) {
-    // Read the worker's current session, not a potentially older UI snapshot:
-    // the user can return to Connect while opening practice is still resolving.
-    const { practice } = await request('GET_PRACTICE');
-    if (practice.active && practice.guideId === guideTab?.id)
-      await request('END_PRACTICE');
-  }
   step = next;
+  demo.setEnabled(step === 2);
   clearKeys();
   $('#page-error').hidden = true;
   $('#step-label').textContent = `Step ${step} of 3`;
@@ -180,9 +164,7 @@ function celebrate() {
 async function updatePinStatus() {
   try {
     const settings = await chrome.action.getUserSettings();
-    $('#pin-status').textContent = settings.isOnToolbar
-      ? 'Select Summary is already pinned. You’re ready to go.'
-      : 'In Chrome’s top-right corner, open Extensions, then pin Select Summary.';
+    $('#pin-status').textContent = settings.isOnToolbar ? 'Already pinned.' : '';
   } catch {
     /* Compatible browsers may not expose pin status. */
   }
@@ -269,30 +251,6 @@ document
       showStep(Number(button.dataset.step)).catch(pageError)
     )
   );
-$('#start-practice').addEventListener('click', async () => {
-  if (openingPractice) return;
-  openingPractice = true;
-  $('#start-practice').disabled = true;
-  try {
-    const tab = await chrome.tabs.getCurrent();
-    await request('START_PRACTICE', { guideId: tab.id });
-    await snapshot();
-  } catch (error) {
-    message($('#practice-status'), error.message, true);
-  } finally {
-    openingPractice = false;
-    $('#start-practice').disabled = false;
-  }
-});
-$('#end-practice').addEventListener('click', async () => {
-  try {
-    await request('END_PRACTICE');
-    await snapshot();
-    message($('#practice-status'), 'Practice restrictions ended. You can browse freely.');
-  } catch (error) {
-    pageError(error);
-  }
-});
 document.addEventListener('keydown', (event) => {
   if (step !== 2) return;
   downCodes.add(event.code);
@@ -319,12 +277,9 @@ document.addEventListener('keydown', (event) => {
           )
     );
   });
-  if (matchesShortcut(event, keys)) {
+  if (matchesShortcut(event, keys) && !event.repeat) {
     event.preventDefault();
-    message(
-      $('#sandbox-status'),
-      'Open either article and highlight text to summarize it.'
-    );
+    void demo.summarize('shortcut');
   }
 });
 document.addEventListener('keyup', (event) => {
@@ -353,23 +308,24 @@ chrome.runtime.onMessage.addListener((payload, sender, respond) => {
   if (
     sender.id !== chrome.runtime.id ||
     sender.tab ||
-    !['PRACTICE_SHORTCUT', 'PRACTICE_CONTEXT'].includes(payload?.type)
+    payload?.targetTabId !== guideTab?.id ||
+    !['PRACTICE_SHORTCUT', 'PRACTICE_CONTEXT'].includes(payload.type)
   )
     return false;
-  chrome.tabs.getCurrent().then((tab) => {
-    if (payload.targetTabId !== tab?.id) return;
-    if (step === 2) {
+  respond({ handled: true });
+  if (step === 2) {
+    if (payload.type === 'PRACTICE_SHORTCUT') {
       document
         .querySelectorAll('#shortcut-keys kbd')
         .forEach((cap) => cap.classList.add('is-pressed'));
+      clearTimeout(keyTimer);
       keyTimer = setTimeout(clearKeys, 200);
-      message(
-        $('#sandbox-status'),
-        'Open either article and highlight text to summarize it.'
-      );
     }
-  });
-  respond({ handled: true });
+    void demo.summarize(
+      payload.type === 'PRACTICE_CONTEXT' ? 'context' : 'shortcut',
+      payload.selection
+    );
+  }
   return false;
 });
 $('#finish-welcome').addEventListener('click', async () => {
@@ -377,25 +333,17 @@ $('#finish-welcome').addEventListener('click', async () => {
   try {
     await request('FINISH_WELCOME');
     const tab = await chrome.tabs.getCurrent();
-    const tabs = await chrome.tabs.query({ windowId: tab.windowId });
-    if (tabs.length === 1) await chrome.tabs.update(tab.id, { url: 'chrome://newtab/' });
-    else await chrome.tabs.remove(tab.id);
+    await chrome.tabs.remove(tab.id);
   } catch (error) {
     $('#finish-welcome').disabled = false;
     pageError(error);
   }
 });
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (
-    !state ||
-    !(
-      (area === 'local' && changes.appState) ||
-      (area === 'session' && (changes.practiceSession || changes.practiceStatus))
-    )
-  )
-    return;
+  if (!state || area !== 'local' || !changes.appState) return;
   snapshot()
     .then(async () => {
+      if (!state.keyConfigured) demo.clear();
       if (!state.keyValidated && step !== 1) await showStep(1, { persist: false });
       else if (!state.onboarding.sandboxComplete && step === 3)
         await showStep(2, { persist: false });
@@ -403,7 +351,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
     .catch(pageError);
 });
 window.addEventListener('blur', clearKeys);
-window.addEventListener('resize', () => walkthroughs.stop());
+window.addEventListener('resize', () => {
+  walkthroughs.stop();
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!document.hidden) walkthroughs.show(step);
+  }, 150);
+});
 document.addEventListener('visibilitychange', () => {
   clearKeys();
   if (document.hidden) {
@@ -421,8 +375,10 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', () => {
   walkthroughs.stop();
+  demo.destroy();
   clearKeys();
   clearTimeout(confettiTimer);
+  clearTimeout(resizeTimer);
   $('#api-key').value = '';
 });
 async function initialize() {

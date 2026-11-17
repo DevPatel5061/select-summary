@@ -10,11 +10,11 @@ import {
 } from './core.js';
 import { createStore } from './storage.js';
 import { summarize, validateApiKey } from './gemini.js';
-import { createPracticeSessions } from './practice-session.js';
+import { DEMO_ARTICLES } from './demo-articles.js';
 
 const store = createStore(chrome.storage.local);
 const activeTabs = new Set();
-const practiceSessions = createPracticeSessions();
+const activeDemos = new Set();
 let activeCount = 0;
 let connecting = false;
 let credentialEpoch = 0;
@@ -90,7 +90,6 @@ async function handleSelection(selection, tab) {
   try {
     const source = validateSelection(selection);
     const state = await store.read();
-    const practiceId = await practiceSessions.match(tab.id);
     if (!state.key)
       throw new AppError('NO_KEY', 'Open Select Summary and connect your Gemini key.');
     await notice('loading', 'Summarizing', 'Waiting for Gemini.');
@@ -100,16 +99,13 @@ async function handleSelection(selection, tab) {
     await store.update((current) => {
       if (current.credentialRevision !== state.credentialRevision)
         throw new AppError('CANCELLED', 'Settings changed. Please try again.');
-      const next = addSummary(
+      return addSummary(
         current,
         text,
         wordCount(source),
         Date.now(),
         crypto.randomUUID()
       );
-      return practiceId
-        ? { ...next, onboarding: { ...next.onboarding, sandboxComplete: true } }
-        : next;
     });
     const shown = await showCard(tab.id, { kind: 'summary', text });
     await notice(
@@ -193,7 +189,50 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-async function appRequest(message, sender) {
+// The demo uses the same provider and local accounting as normal summaries.
+// A request ID prevents duplicate responses from awarding activity twice.
+async function summarizeDemo(message) {
+  const article = Object.hasOwn(DEMO_ARTICLES, message.articleId)
+    ? DEMO_ARTICLES[message.articleId]
+    : null;
+  const source = validateSelection(message.selection);
+  const normalize = (text) => text.replace(/\s+/g, ' ').trim();
+  if (!article || !normalize(article.text).includes(normalize(source)))
+    throw new AppError('SELECTION', 'Highlight paragraph text in the demo.');
+  if (
+    typeof message.requestId !== 'string' ||
+    !/^[a-zA-Z0-9-]{16,64}$/.test(message.requestId)
+  )
+    throw new AppError('MESSAGE', 'Invalid summary request.');
+  const state = await store.read();
+  if (!state.keyValidated || !state.key)
+    throw new AppError('NO_KEY', 'Verify your Gemini key first.');
+  const previous = state.history.find((item) => item.id === message.requestId);
+  if (previous) return { summary: previous.text };
+  if (activeDemos.has(state.credentialRevision))
+    throw new AppError('BUSY', 'Your summary is already on its way.');
+  activeDemos.add(state.credentialRevision);
+  try {
+    const summary = await summarize(source, state.key);
+    await store.update((current) => {
+      if (current.credentialRevision !== state.credentialRevision)
+        throw new AppError('CANCELLED', 'Your key changed. Please try again.');
+      const next = addSummary(
+        current,
+        summary,
+        wordCount(source),
+        Date.now(),
+        message.requestId
+      );
+      return { ...next, onboarding: { ...next.onboarding, sandboxComplete: true } };
+    });
+    return { summary };
+  } finally {
+    activeDemos.delete(state.credentialRevision);
+  }
+}
+
+async function appRequest(message) {
   switch (message.type) {
     case 'GET_STATE': {
       const [stored, session, platform, commands] = await Promise.all([
@@ -269,27 +308,9 @@ async function appRequest(message, sender) {
         connecting = false;
       }
     }
-    case 'START_PRACTICE': {
-      const state = await store.read();
-      if (!state.keyValidated)
-        throw new AppError('NO_KEY', 'Verify your Gemini key first.');
-      const guideId = sender.tab?.id || message.guideId;
-      if (!Number.isInteger(guideId))
-        throw new AppError('PRACTICE', 'Open practice from the welcome tab.');
-      try {
-        await practiceSessions.start(guideId);
-      } catch (error) {
-        throw new AppError('PRACTICE', error.message);
-      }
-      return { practice: await practiceSessions.status() };
-    }
-    case 'GET_PRACTICE':
-      return { practice: await practiceSessions.status() };
-    case 'END_PRACTICE':
-      await practiceSessions.end();
-      return { practice: await practiceSessions.status() };
+    case 'SUMMARIZE_DEMO':
+      return summarizeDemo(message);
     case 'FINISH_WELCOME':
-      await practiceSessions.end();
       await store.update((state) => {
         if (!state.keyValidated || !state.onboarding.sandboxComplete)
           throw new AppError('SANDBOX', 'Generate a live summary first.');
@@ -304,7 +325,6 @@ async function appRequest(message, sender) {
       return {};
     case 'REMOVE_KEY':
       credentialEpoch++;
-      await practiceSessions.end();
       await store.update((state) => ({
         ...state,
         key: null,
@@ -315,7 +335,6 @@ async function appRequest(message, sender) {
       return {};
     case 'RESET_ALL':
       credentialEpoch++;
-      await practiceSessions.end();
       await store.update((state) => ({
         ...initialState(),
         credentialRevision: state.credentialRevision + 1
@@ -341,9 +360,12 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     typeof message.type !== 'string'
   )
     return false;
-  appRequest(message, sender).then(
+  appRequest(message).then(
     (result) => respond({ ok: true, ...result }),
     (error) => respond({ ok: false, error: safeError(error) })
   );
   return true;
 });
+
+// Release any temporary IDs left by the former separate-window walkthrough.
+chrome.storage.session.remove(['practiceSession', 'practiceStatus']).catch(() => {});

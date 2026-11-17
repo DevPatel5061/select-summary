@@ -112,14 +112,7 @@
           </div>
           <div class="guide-column">
             <div class="visual-heading">
-              <span>Follow along in Google AI Studio</span
-              ><button
-                id="guide-replay"
-                class="icon-button"
-                data-icon="arrow"
-                aria-label="Replay API key walkthrough"
-                title="Replay walkthrough"
-              ></button>
+              <span>Follow along in Google AI Studio</span>
             </div>
             <div
               class="studio-guide"
@@ -212,7 +205,7 @@
                 <div class="mock-field" id="mock-paste">
                   <span id="mock-paste-value"></span><span class="typing-caret"></span>
                 </div>
-                <div class="mock-connect">Verify &amp; Save Key</div>
+                <div class="mock-connect">Verify &amp; Continue</div>
               </div>
               <div class="animated-cursor" id="studio-cursor" aria-hidden="true"></div>
             </div>
@@ -230,36 +223,96 @@
         hidden
       >
         <div class="section-header">
-          <h1 id="sandbox-title" tabindex="-1">Try it in Chrome.</h1>
-          <p class="lead">
-            Highlight text on either article, then right-click → Summarize selection.
-          </p>
+          <h1 id="sandbox-title" tabindex="-1">Try Select Summary.</h1>
+          <p class="lead">Highlight text, then right-click → Summarize selection.</p>
         </div>
-        <div class="real-practice">
+        <div class="demo-tools">
+          <span>Or use your shortcut</span>
           <div
             id="shortcut-keys"
             class="shortcut-keys"
             aria-label="Your summarization shortcut"
           ></div>
-          <ol class="practice-articles">
-            <li>GeeksforGeeks · Hash Table</li>
-            <li>Wikipedia · Toronto</li>
-          </ol>
-          <p class="muted">
-            Return to this Select Summary tab after reading your summary.
-          </p>
-          <button id="start-practice" class="button primary">Open practice window</button>
-          <p class="fine-print">
-            Extra tabs close inside the practice window until you finish or exit.
-            Navigation within existing tabs works normally.
-          </p>
-          <button id="end-practice" class="text-button" hidden>Exit practice</button>
-          <p id="practice-status" class="form-message" role="status"></p>
-          <p id="sandbox-status" class="form-message" role="status"></p>
-          <div id="summary-reward" class="summary-reward" role="status" hidden>
-            <span>Summary saved</span><span id="reward-streak"></span
-            ><span>50 XP per summary</span>
+        </div>
+        <div class="article-demo" id="article-demo">
+          <div class="demo-tabs" role="tablist" aria-label="Practice articles">
+            <button
+              id="tab-hash"
+              data-article="hash"
+              role="tab"
+              aria-selected="true"
+              aria-controls="article-hash"
+            >
+              Hash Table · GeeksforGeeks
+            </button>
+            <button
+              id="tab-toronto"
+              data-article="toronto"
+              role="tab"
+              aria-selected="false"
+              aria-controls="article-toronto"
+              tabindex="-1"
+            >
+              Toronto · Wikipedia
+            </button>
           </div>
+          <div class="demo-address-bar">
+            <button
+              id="reset-demo"
+              class="icon-button"
+              data-icon="reload"
+              aria-label="Reset demo"
+            ></button
+            ><input
+              id="demo-address"
+              readonly
+              aria-label="Article source URL"
+              value="https://www.geeksforgeeks.org/dsa/hash-table-data-structure/"
+            />
+          </div>
+          <div class="demo-viewport" id="demo-viewport">
+            <div class="demo-scroll">
+              <article
+                id="article-hash"
+                role="tabpanel"
+                aria-labelledby="tab-hash"
+                class="demo-article hash-article"
+              >
+                <header class="article-brand">GeeksforGeeks</header>
+                <div class="article-content">
+                  <h2>Hash Table Data Structure</h2>
+                  <p id="text-hash" data-demo-text="hash" tabindex="0"></p>
+                  <p class="article-credit">
+                    Practice adaptation · Source: GeeksforGeeks
+                  </p>
+                </div>
+              </article>
+              <article
+                id="article-toronto"
+                role="tabpanel"
+                aria-labelledby="tab-toronto"
+                class="demo-article toronto-article"
+                hidden
+              >
+                <header class="article-brand">Wikipedia</header>
+                <div class="article-content">
+                  <h2>Toronto</h2>
+                  <p class="article-byline">From Wikipedia, the free encyclopedia</p>
+                  <p id="text-toronto" data-demo-text="toronto" tabindex="0"></p>
+                  <p class="article-credit">Practice adaptation · Source: Wikipedia</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+        <div class="demo-result-status">
+          <p id="sandbox-status" class="form-message" role="status"></p>
+          <button id="restore-summary" class="text-button" hidden>
+            Show summary again
+          </button>
+        </div>
+        <div id="summary-reward" class="summary-reward" role="status" hidden>
+          <span>Summary saved</span><span id="reward-streak"></span>
         </div>
         <div class="wizard-actions">
           <button class="button secondary" id="back-connect">Back</button
@@ -272,70 +325,67 @@
         aria-labelledby="pin-title"
         hidden
       >
-        <div class="pin-copy">
-          <span class="complete-label">READY WHEN YOU ARE</span>
-          <h1 id="pin-title" tabindex="-1">Keep it within reach.</h1>
-          <p class="lead">Pin Select Summary to your toolbar.</p>
-          <p class="muted">
-            Your streak, milestones, and summary history will be one click away.
-          </p>
-        </div>
-        <button id="pin-replay" class="text-button">Replay pinning guide</button>
-        <div
-          id="pin-illustration"
-          class="pin-illustration"
-          role="img"
-          aria-label="Open Chrome’s Extensions menu in the top-right toolbar, then click the pin next to Select Summary"
-        >
-          <div class="browser-toolbar pin-toolbar">
-            <span class="browser-address">Chrome toolbar</span
-            ><button
-              id="pin-extensions"
-              class="icon-button"
-              aria-label="Illustrated Extensions menu"
-            >
-              <span class="extensions-shape" aria-hidden="true"></span></button
-            ><img
-              id="pinned-example"
-              src="icon/icon.png"
-              width="22"
-              height="22"
-              alt="Pinned Select Summary"
-              hidden
-            /><span class="chrome-avatar" aria-hidden="true"></span
-            ><span class="chrome-menu" aria-hidden="true">⋮</span>
+        <div class="pin-layout">
+          <div class="pin-copy">
+            <h1 id="pin-title" tabindex="-1">Pin Select Summary.</h1>
+            <p class="lead">Keep it in Chrome’s toolbar.</p>
+            <p id="pin-status" class="fine-print"></p>
+            <button id="finish-welcome" class="button primary finish-button">
+              Finish onboarding</button
+            ><button id="back-sandbox" class="text-button">Back</button>
           </div>
-          <div class="extensions-menu" id="pin-menu">
-            <h3>Extensions</h3>
-            <p>Full access</p>
-            <div class="extension-row">
-              <img src="icon/icon.png" alt="" width="28" height="28" /><span
-                >Select Summary</span
-              ><button
-                id="pin-example"
-                class="pin-example"
-                type="button"
-                aria-label="Illustrated pin button"
-              >
-                <span class="pin-shape" aria-hidden="true"></span></button
-              ><span aria-hidden="true">⋮</span>
+          <div class="pin-demo-column">
+            <div
+              id="pin-illustration"
+              class="pin-illustration"
+              role="img"
+              aria-label="Open Chrome’s Extensions menu in the top-right toolbar, then click the pin next to Select Summary"
+            >
+              <div class="browser-toolbar pin-toolbar">
+                <span class="browser-address">Chrome toolbar</span
+                ><button
+                  id="pin-extensions"
+                  tabindex="-1"
+                  class="icon-button"
+                  aria-label="Illustrated Extensions menu"
+                >
+                  <span class="extensions-shape" aria-hidden="true"></span></button
+                ><img
+                  id="pinned-example"
+                  src="icon/icon.png"
+                  width="22"
+                  height="22"
+                  alt="Pinned Select Summary"
+                  hidden
+                /><span class="chrome-avatar" aria-hidden="true"></span
+                ><span class="chrome-menu" aria-hidden="true">⋮</span>
+              </div>
+              <div class="extensions-menu" id="pin-menu">
+                <h3>Extensions</h3>
+                <p>Full access</p>
+                <div class="extension-row">
+                  <img src="icon/icon.png" alt="" width="28" height="28" /><span
+                    >Select Summary</span
+                  ><button
+                    id="pin-example"
+                    tabindex="-1"
+                    class="pin-example"
+                    type="button"
+                    aria-label="Illustrated pin button"
+                  >
+                    <span class="pin-shape" aria-hidden="true"></span></button
+                  ><span aria-hidden="true">⋮</span>
+                </div>
+              </div>
+              <div
+                id="pin-cursor"
+                class="animated-cursor"
+                aria-hidden="true"
+                hidden
+              ></div>
             </div>
           </div>
-          <div id="pin-cursor" class="animated-cursor" aria-hidden="true" hidden></div>
-          <span class="pin-callout callout-one">1 <span>Open Extensions</span></span
-          ><span class="pin-callout callout-two">2 <span>Click the pin</span></span>
         </div>
-        <p id="pin-status" class="fine-print">
-          In Chrome’s top-right corner, open Extensions, then pin Select Summary.
-        </p>
-        <button
-          id="finish-welcome"
-          class="button primary finish-button"
-          data-icon="arrow"
-        >
-          Start Browsing &amp; Earning Streaks
-        </button>
-        <button id="back-sandbox" class="text-button">Back</button>
       </section>
     </main>
     <div id="confetti" class="confetti" aria-hidden="true" hidden></div>

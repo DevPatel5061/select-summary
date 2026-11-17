@@ -9,34 +9,49 @@
   </head>
   <body>
     <div class="onboarding-shell">
-      <header class="site-header">
-        <a
-          class="brand"
-          href="#welcome"
-          id="restart-welcome"
-          aria-label="Select Summary welcome"
-          ><img src="icon/onboarding.svg" width="28" height="28" alt="" /><span
-            class="wordmark"
-            >Select<span>Summary</span></span
-          ></a
-        >
-      </header>
       <main class="welcome-layout" aria-busy="true" id="welcome-main">
-        <div class="progress-row" id="setup-progress" hidden>
-          <nav class="progress" aria-label="Setup progress">
-            <button class="step-tab" data-step="1">
-              <span class="step-number">1</span>Connect
-            </button>
-            <span class="step-connector" aria-hidden="true"></span>
-            <button class="step-tab" data-step="2" disabled>
-              <span class="step-number">2</span>Try it
-            </button>
-            <span class="step-connector" aria-hidden="true"></span>
-            <button class="step-tab" data-step="3" disabled>
-              <span class="step-number">3</span>Ready
-            </button>
-          </nav>
-        </div>
+        <header class="site-header">
+          <a
+            class="brand"
+            href="#welcome"
+            id="restart-welcome"
+            aria-label="Select Summary welcome"
+            ><img
+              src="icon/onboarding.svg"
+              width="28"
+              height="28"
+              alt=""
+            /><span class="wordmark">Select<span>Summary</span></span></a
+          >
+          <div class="progress-row" id="setup-progress" hidden>
+            <nav class="progress" aria-label="Setup progress">
+              <button class="step-tab" data-step="1" aria-label="Connect">
+                <span class="step-number">1</span
+                ><span class="step-name">Connect</span>
+              </button>
+              <span class="step-connector" aria-hidden="true"></span>
+              <button
+                class="step-tab"
+                data-step="2"
+                aria-label="Try it"
+                disabled
+              >
+                <span class="step-number">2</span
+                ><span class="step-name">Try it</span>
+              </button>
+              <span class="step-connector" aria-hidden="true"></span>
+              <button
+                class="step-tab"
+                data-step="3"
+                aria-label="Ready"
+                disabled
+              >
+                <span class="step-number">3</span
+                ><span class="step-name">Ready</span>
+              </button>
+            </nav>
+          </div>
+        </header>
         <div id="boot" class="boot-message" role="status">
           Getting your setup ready…
         </div>
@@ -52,21 +67,18 @@
               <h1 id="intro-title" tabindex="-1">
                 Summarize any text on the page.
               </h1>
-              <p class="lead">Select a passage to get a short summary without opening another page.</p>
+              <p class="lead">
+                Select a passage to get a short summary without opening another
+                page.
+              </p>
               <div class="intro-actions">
                 <button
                   id="get-started"
                   class="button primary"
                   data-icon="arrow"
                 >
-                  Get started</button
-                ><span class="fine-print"
-                  >Uses your Gemini key.<br />We’ll help you connect it.</span
-                >
-              </div>
-              <div class="intro-benefits">
-                <span>15–30 word summaries</span
-                ><span>History saved on your device</span>
+                  Get started
+                </button>
               </div>
             </div>
             <div class="intro-demo-column">
@@ -123,30 +135,11 @@
                   >
                 </div>
                 <div
-                  class="illustrated-summary"
                   id="intro-result"
+                  class="intro-result-layer"
                   aria-hidden="true"
                   hidden
-                >
-                  <div class="illustrated-summary-heading">
-                    <span>Select Summary</span
-                    ><span class="illustrated-close">×</span>
-                  </div>
-                  <p id="intro-result-text">Summarizing…</p>
-                  <div
-                    class="illustrated-summary-footer"
-                    id="intro-result-footer"
-                    hidden
-                  >
-                    <span>Summary</span
-                    ><span class="illustrated-copy">Copy</span>
-                  </div>
-                  <div
-                    id="intro-loading"
-                    class="illustrated-loading"
-                    hidden
-                  ></div>
-                </div>
+                ></div>
                 <div
                   id="intro-cursor"
                   class="animated-cursor"
@@ -782,10 +775,7 @@
             </button>
           </footer>
         </section>
-        <p class="page-footer">
-          Your key and history stay on this device. Selected text goes directly
-          to Google.
-        </p>
+        <p class="page-footer">Your API key and history stay on device.</p>
       </main>
     </div>
   </body>

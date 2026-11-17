@@ -6,16 +6,29 @@ export function createStore(storage) {
   let initialized = false;
   function transaction(transform) {
     const operation = queue.then(async () => {
+      let appState;
       if (!initialized) {
         await storage.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
-        const existing = await storage.get(['appState', 'geminiApiKey', 'summaries']);
+        const existing = await storage.get([
+          'appState',
+          'geminiApiKey',
+          'summaries'
+        ]);
         const migrated = migrateState(existing);
-        if (!existing.appState || existing.appState.version !== migrated.version)
+        if (
+          !existing.appState ||
+          existing.appState.version !== migrated.version
+        )
           await storage.set({ appState: migrated });
-        await storage.remove(['geminiApiKey', 'summaries']);
+        const legacyKeys = ['geminiApiKey', 'summaries'].filter(
+          (key) => existing[key] !== undefined
+        );
+        if (legacyKeys.length) await storage.remove(legacyKeys);
+        appState = migrated;
         initialized = true;
+      } else {
+        ({ appState } = await storage.get('appState'));
       }
-      const { appState } = await storage.get('appState');
       if (!transform) return structuredClone(appState);
       const next = transform(structuredClone(appState));
       await storage.set({ appState: next });
@@ -24,5 +37,8 @@ export function createStore(storage) {
     queue = operation.catch(() => {});
     return operation;
   }
-  return { read: () => transaction(), update: (transform) => transaction(transform) };
+  return {
+    read: () => transaction(),
+    update: (transform) => transaction(transform)
+  };
 }

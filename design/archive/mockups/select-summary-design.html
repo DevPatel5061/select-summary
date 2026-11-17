@@ -1,0 +1,258 @@
+<div id="select-summary-design">
+  <div class="viz-row ss-preview-bar" aria-label="Mockup views">
+    <button class="btn" data-view="onboarding" aria-pressed="true">Onboarding</button>
+    <button class="btn" data-view="popup" aria-pressed="false">Extension popup</button>
+    <button class="btn" data-view="summary" aria-pressed="false">Summary card</button>
+    <span class="text-small text-muted">Interactive concept · Sample data</span>
+  </div>
+  <div class="ss-board" data-current-view="onboarding">
+    <section class="ss-surface ss-onboarding-surface" data-surface="onboarding">
+      <div class="ss-section-label"><h3>Onboarding</h3><div class="viz-row" aria-label="Onboarding preview screens"><button class="btn btn-ghost" data-stage="0" aria-pressed="true">Welcome</button><button class="btn btn-ghost" data-stage="1">Connect</button><button class="btn btn-ghost" data-stage="2">Try it</button><button class="btn btn-ghost" data-stage="3">Ready</button></div></div>
+      <div class="ss-product ss-onboarding" aria-label="Select Summary onboarding concept">
+        <header class="ss-app-header"><div class="ss-brand"><img class="ss-logo" src="data:image/png;base64,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" alt=""/><span>Select Summary</span></div><span class="ss-subtle ss-small">A little less reading.</span></header>
+        <div class="ss-onboard-content" id="ss-onboard-content"></div>
+        <footer class="ss-onboard-footer"><span class="ss-small ss-subtle" id="ss-step-description">Made for the way you read.</span><div class="ss-actions" id="ss-onboard-actions"></div></footer>
+      </div>
+    </section>
+    <div class="ss-compact-surfaces">
+      <section class="ss-surface" data-surface="popup">
+        <div class="ss-section-label"><h3>Extension popup</h3><span class="text-small text-muted">Home, history & settings</span></div>
+        <div class="viz-dotted-background ss-contained-preview">
+          <div class="ss-product ss-popup" aria-label="Select Summary extension popup concept">
+            <header class="ss-app-header"><div class="ss-brand"><img class="ss-logo" src="data:image/png;base64,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" alt=""/><span>Select Summary</span></div><button class="ss-icon-button" data-act="settings" aria-label="Open settings"><i data-lucide="settings-2" aria-hidden="true"></i></button></header>
+            <nav class="ss-popup-nav" aria-label="Extension navigation"><button data-popup="home" aria-current="page">Home</button><button data-popup="history">History</button><button data-popup="settings">Settings</button></nav>
+            <div class="ss-popup-content" id="ss-popup-content"></div>
+            <footer class="ss-popup-footer"><span class="ss-connected"><span class="ss-status-dot"></span>Gemini connected</span><span>History stays on this device</span></footer>
+          </div>
+        </div>
+      </section>
+      <section class="ss-surface" data-surface="summary">
+        <div class="ss-section-label"><h3>In-page summary</h3><div class="viz-row" aria-label="Summary preview states"><button class="btn btn-ghost" data-result="result" aria-pressed="true">Result</button><button class="btn btn-ghost" data-result="loading">Loading</button><button class="btn btn-ghost" data-result="error">Error</button></div></div>
+        <div class="ss-product ss-article-preview" aria-label="Summary card on an example article">
+          <div class="ss-article-masthead">Fieldnotes<span>Cities & culture</span></div>
+          <div class="ss-article-copy"><span class="ss-eyebrow">A closer look</span><h2>A city shaped by its people.</h2><p><mark>Toronto is Ontario’s capital and Canada’s largest city. Immigration has shaped its neighbourhoods, languages and culture.</mark> Its parks, ravines and waterfront are part of everyday life along Lake Ontario.</p></div>
+          <div id="ss-floating-result" aria-live="polite"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<style>
+#select-summary-design{--ss-accent:#1763e8;--ss-accent-text:#fff;--ss-ink:light-dark(#18243a,#e9eef8);--ss-muted:light-dark(#626f83,#aebad0);--ss-bg:light-dark(#fff,#172131);--ss-wash:light-dark(#f6f8fc,#111a28);--ss-line:light-dark(#e3e8f0,#344258);--ss-soft:light-dark(#edf3ff,#21375a);--ss-green:light-dark(#26724e,#8cdbaf);--ss-green-wash:light-dark(#edf8f1,#1c382a);--ss-red:light-dark(#a5353b,#ffb1b6);--ss-red-wash:light-dark(#fff2f2,#42252c);--ss-radius:14px;--ss-space:24px;--ss-shadow:light-dark(0 10px 32px #162f5410,0 10px 32px #0004);--ss-selection:light-dark(#d9e7ff,#294974);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#select-summary-design [hidden]{display:none!important}
+#select-summary-design .ss-preview-bar{margin-bottom:22px;padding-right:88px}
+#select-summary-design .ss-board{display:grid;grid-template-columns:minmax(0,1fr);gap:28px}
+#select-summary-design .ss-surface{min-width:0}
+#select-summary-design .ss-section-label>.viz-row{max-width:100%;flex-wrap:wrap;min-width:0}
+#select-summary-design .ss-section-label{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+#select-summary-design .ss-compact-surfaces{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:28px;align-items:start}
+#select-summary-design .ss-contained-preview{padding:24px 12px;display:flex;justify-content:center;border-radius:16px}
+#select-summary-design .ss-product{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.6;color:var(--ss-ink);background:var(--ss-bg);border:1px solid var(--ss-line);border-radius:var(--ss-radius);box-shadow:var(--ss-shadow);isolation:isolate;min-width:0}
+#select-summary-design .ss-product *{box-sizing:border-box}
+#select-summary-design .ss-product :is(h1,h2,h3,p){margin:0}
+#select-summary-design .ss-product h1{font-size:36px;font-weight:650;line-height:1.15;letter-spacing:-1.4px}
+#select-summary-design .ss-product h2{font-size:23px;font-weight:620;line-height:1.25;letter-spacing:-.65px}
+#select-summary-design .ss-product h3{font-size:15px;font-weight:600;line-height:1.4;letter-spacing:-.15px}
+#select-summary-design .ss-product button{font:inherit;font-size:13px;font-weight:550;line-height:1.4;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;min-height:40px;border:1px solid var(--ss-line);border-radius:calc(var(--ss-radius) - 6px);background:var(--ss-bg);color:var(--ss-ink);transition:background 160ms,transform 160ms}
+#select-summary-design .ss-product button:hover{background:var(--ss-wash)}
+#select-summary-design .ss-product button.ss-primary{color:var(--ss-accent-text);background:var(--ss-accent);border-color:var(--ss-accent)}
+#select-summary-design .ss-product button.ss-primary:hover{filter:brightness(.96)}
+#select-summary-design .ss-product button.ss-text-button{color:var(--ss-accent);background:transparent;border-color:transparent;padding-inline:4px}
+#select-summary-design .ss-product button.ss-icon-button{padding:7px;min-width:32px;min-height:32px;border:0;background:transparent;color:var(--ss-muted)}
+#select-summary-design .ss-product button:disabled{opacity:.48}
+#select-summary-design .ss-product :is(button,input,summary):focus-visible{outline:3px solid color-mix(in srgb,var(--ss-accent) 45%,transparent);outline-offset:3px}
+#select-summary-design .ss-product button svg{width:16px;height:16px;flex-shrink:0}
+#select-summary-design .ss-brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;letter-spacing:-.4px;white-space:nowrap}
+#select-summary-design .ss-logo{width:26px;height:26px;border-radius:7px;object-fit:contain;flex-shrink:0}
+#select-summary-design .ss-app-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px var(--ss-space);border-bottom:1px solid var(--ss-line)}
+#select-summary-design .ss-small{font-size:12px;line-height:1.55}
+#select-summary-design .ss-subtle{color:var(--ss-muted)}
+#select-summary-design .ss-eyebrow{display:block;font-size:11px;font-weight:650;letter-spacing:1.5px;text-transform:uppercase;color:var(--ss-muted);margin-bottom:12px}
+#select-summary-design .ss-lead{font-size:15px;color:var(--ss-muted);line-height:1.65;margin-top:14px!important;max-width:440px}
+#select-summary-design .ss-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#select-summary-design .ss-onboard-content{padding:36px;min-height:355px;display:flex;align-items:center}
+#select-summary-design .ss-onboard-content>div{width:100%}
+#select-summary-design .ss-welcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
+#select-summary-design .ss-hero-copy h1{max-width:340px}
+#select-summary-design .ss-hero-copy .ss-actions{margin-top:24px}
+#select-summary-design .ss-hero-note{margin-top:12px!important;color:var(--ss-muted);font-size:12px}
+#select-summary-design .ss-demo-sheet{background:var(--ss-wash);border:1px solid var(--ss-line);padding:20px;border-radius:var(--ss-radius)}
+#select-summary-design .ss-source-label{font-size:11px;letter-spacing:1.2px;font-weight:600;color:var(--ss-muted);text-transform:uppercase;margin-bottom:10px}
+#select-summary-design .ss-selected-copy{font-size:14px;line-height:1.8;margin-bottom:18px!important}
+#select-summary-design .ss-product mark{color:var(--ss-ink);background:var(--ss-selection);padding:2px 0;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+#select-summary-design .ss-result{border:1px solid var(--ss-line);background:var(--ss-bg);border-radius:var(--ss-radius);box-shadow:var(--ss-shadow);padding:18px;color:var(--ss-ink)}
+#select-summary-design .ss-result-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:13px}
+#select-summary-design .ss-result .ss-brand{font-size:13px;gap:7px}
+#select-summary-design .ss-result .ss-logo{width:21px;height:21px;border-radius:5px}
+#select-summary-design .ss-result-body{font-size:14px;line-height:1.7}
+#select-summary-design .ss-result-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
+#select-summary-design .ss-result-meta{font-size:11px;color:var(--ss-muted)}
+#select-summary-design .ss-result-footer button{padding:7px 11px;min-height:34px;font-size:12px}
+#select-summary-design .ss-onboard-footer{padding:17px var(--ss-space);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid var(--ss-line);background:var(--ss-wash);border-radius:0 0 var(--ss-radius) var(--ss-radius)}
+#select-summary-design .ss-steps{display:flex;gap:18px;flex-wrap:wrap;color:var(--ss-muted);font-size:12px;margin-bottom:24px}
+#select-summary-design .ss-step{display:inline-flex;align-items:center;gap:7px}
+#select-summary-design .ss-step-number{width:21px;height:21px;display:inline-grid;place-items:center;border:1px solid var(--ss-line);border-radius:50%;font-size:11px}
+#select-summary-design .ss-step.is-current{color:var(--ss-accent);font-weight:600}
+#select-summary-design .ss-step.is-current .ss-step-number{background:var(--ss-accent);color:var(--ss-accent-text);border-color:var(--ss-accent)}
+#select-summary-design .ss-connect-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:start}
+#select-summary-design .ss-form{display:grid;gap:14px;margin-top:22px}
+#select-summary-design .ss-form-label{display:block;font-size:13px;font-weight:550;margin-bottom:7px}
+#select-summary-design .ss-product input[type=password],#select-summary-design .ss-product input[type=text]{background:var(--ss-bg);color:var(--ss-ink);border:1px solid var(--ss-line);border-radius:calc(var(--ss-radius) - 6px);padding:12px;width:100%;font:inherit;font-size:14px;min-width:0}
+#select-summary-design .ss-check{display:flex;gap:9px;align-items:flex-start;font-size:12px;line-height:1.65;color:var(--ss-muted)}
+#select-summary-design .ss-check input{margin-top:5px;accent-color:var(--ss-accent);flex-shrink:0}
+#select-summary-design .ss-key-guide{background:var(--ss-wash);padding:22px;border-radius:var(--ss-radius)}
+#select-summary-design .ss-external-link{display:inline-flex;align-items:center;gap:6px;color:var(--ss-accent);font-size:13px;font-weight:550;margin-top:10px;text-decoration:none}
+#select-summary-design .ss-external-link:hover{text-decoration:underline}
+#select-summary-design .ss-key-guide ol{padding-left:19px;margin:16px 0 0;font-size:13px;color:var(--ss-muted)}
+#select-summary-design .ss-key-guide li+li{margin-top:14px}
+#select-summary-design .ss-key-guide strong{display:block;color:var(--ss-ink);font-weight:550}
+#select-summary-design .ss-key-guide details{font-size:12px;margin-top:18px;color:var(--ss-muted)}
+#select-summary-design .ss-key-guide summary{color:var(--ss-accent)}
+#select-summary-design .ss-form-feedback{font-size:12px;color:var(--ss-red)}
+#select-summary-design .ss-practice-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:start;margin-top:22px}
+#select-summary-design .ss-practice-passage{padding:22px;background:var(--ss-wash);border:1px solid var(--ss-line);border-radius:var(--ss-radius)}
+#select-summary-design .ss-practice-passage h3{margin-bottom:12px}
+#select-summary-design .ss-practice-passage p{user-select:text;line-height:1.85;font-size:14px}
+#select-summary-design .ss-practice-passage p::selection{background:var(--ss-selection)}
+#select-summary-design .ss-practice-helper{font-size:12px;color:var(--ss-muted);margin-top:16px!important}
+#select-summary-design .ss-await-result{padding:22px;display:grid;gap:12px;justify-items:start}
+#select-summary-design .ss-success{display:flex;gap:9px;align-items:center;color:var(--ss-green);font-size:13px;margin-top:16px!important}
+#select-summary-design .ss-success svg{width:17px;height:17px;flex-shrink:0}
+#select-summary-design .ss-ready-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
+#select-summary-design .ss-pin-guide{background:var(--ss-wash);border:1px solid var(--ss-line);border-radius:var(--ss-radius);padding:22px}
+#select-summary-design .ss-pin-guide ol{padding-left:19px;color:var(--ss-muted);font-size:13px;line-height:1.9;margin:12px 0 0}
+#select-summary-design .ss-shortcut{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;background:var(--ss-wash);border:1px solid var(--ss-line);border-radius:calc(var(--ss-radius) - 4px);font-size:12px;color:var(--ss-muted)}
+#select-summary-design .ss-product kbd{font-family:inherit;font-size:11px;background:var(--ss-bg);border:1px solid var(--ss-line);border-bottom-width:2px;border-radius:4px;padding:3px 5px;color:var(--ss-ink);display:inline-block;line-height:1.3}
+#select-summary-design .ss-popup{width:400px;max-width:100%}
+#select-summary-design .ss-popup .ss-app-header{padding:18px 20px 15px}
+#select-summary-design .ss-popup-nav{display:flex;gap:18px;padding:0 20px;border-bottom:1px solid var(--ss-line)}
+#select-summary-design .ss-popup-nav button{padding:11px 0;border:0;border-radius:0;border-bottom:2px solid transparent;color:var(--ss-muted);background:transparent;min-height:42px}
+#select-summary-design .ss-popup-nav button[aria-current=page]{border-bottom-color:var(--ss-accent);color:var(--ss-accent)}
+#select-summary-design .ss-popup-content{padding:20px;min-height:390px}
+#select-summary-design .ss-popup-content h2{font-size:23px;max-width:280px}
+#select-summary-design .ss-popup-intro{font-size:13px;color:var(--ss-muted);margin:8px 0 16px!important}
+#select-summary-design .ss-popup-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:23px 0 10px}
+#select-summary-design .ss-popup-section-title button{font-size:12px;min-height:28px;padding-block:4px}
+#select-summary-design .ss-popup .ss-result{box-shadow:none}
+#select-summary-design .ss-popup-metrics{display:none;grid-template-columns:1fr 1fr;margin-top:20px;padding-top:16px;border-top:1px solid var(--ss-line)}
+#select-summary-design .ss-popup[data-activity=true] .ss-popup-metrics{display:grid}
+#select-summary-design .ss-popup-metrics>div+div{border-left:1px solid var(--ss-line);padding-left:18px}
+#select-summary-design .ss-popup-metrics strong{display:block;font-size:23px;font-weight:600;line-height:1.3;letter-spacing:-.7px}
+#select-summary-design .ss-popup-metrics span{color:var(--ss-muted);font-size:11px}
+#select-summary-design .ss-popup-footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:13px 20px;border-top:1px solid var(--ss-line);font-size:11px;color:var(--ss-muted)}
+#select-summary-design .ss-connected{display:inline-flex;align-items:center;gap:6px;color:var(--ss-green)}
+#select-summary-design .ss-status-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+#select-summary-design .ss-history-list{display:grid;gap:12px;margin-top:18px}
+#select-summary-design .ss-history-meta{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--ss-muted);margin-bottom:7px}
+#select-summary-design .ss-setting{padding:17px 0;border-bottom:1px solid var(--ss-line)}
+#select-summary-design .ss-setting:last-child{border:0;padding-bottom:0}
+#select-summary-design .ss-setting-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#select-summary-design .ss-setting p{font-size:12px;color:var(--ss-muted);margin-top:5px}
+#select-summary-design .ss-setting details{font-size:12px;color:var(--ss-muted);margin-top:10px}
+#select-summary-design .ss-setting summary{color:var(--ss-ink)}
+#select-summary-design .ss-setting .ss-text-button{font-size:12px;min-height:30px;padding-block:4px}
+#select-summary-design .ss-article-preview{background:var(--ss-wash);padding:24px;min-height:550px;box-shadow:none}
+#select-summary-design .ss-article-masthead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:15px;border-bottom:1px solid var(--ss-line);font-size:15px;font-weight:600;letter-spacing:-.3px}
+#select-summary-design .ss-article-masthead span{font-size:11px;font-weight:400;color:var(--ss-muted)}
+#select-summary-design .ss-article-copy{padding:28px 0 0}
+#select-summary-design .ss-article-copy h2{font-family:Georgia,serif;font-size:28px;font-weight:400;letter-spacing:-.5px;max-width:330px}
+#select-summary-design .ss-article-copy p{font-size:14px;color:var(--ss-muted);line-height:1.9;margin-top:18px;max-width:450px}
+#select-summary-design #ss-floating-result{max-width:350px;margin:28px 0 0 auto;position:relative}
+#select-summary-design .ss-loading-indicator{height:4px;border-radius:4px;background:var(--ss-soft);margin-top:16px}
+#select-summary-design .ss-loading-indicator:after{content:"";display:block;width:42%;height:100%;border-radius:inherit;background:var(--ss-accent)}
+#select-summary-design .ss-error-content{color:var(--ss-red);padding:13px;background:var(--ss-red-wash);border-radius:calc(var(--ss-radius) - 6px)}
+#select-summary-design .ss-error-content p{font-size:12px;margin-top:5px}
+#select-summary-design .ss-activity-detail{font-size:12px;margin-top:16px;color:var(--ss-muted)}
+#select-summary-design .ss-activity-days{display:flex;gap:5px;margin:10px 0}
+#select-summary-design .ss-activity-day{width:17px;height:17px;border-radius:3px;background:var(--ss-accent);opacity:var(--level)}
+#select-summary-design .ss-board[data-current-view=onboarding] [data-surface]:not([data-surface=onboarding]),#select-summary-design .ss-board[data-current-view=popup] [data-surface]:not([data-surface=popup]),#select-summary-design .ss-board[data-current-view=summary] [data-surface]:not([data-surface=summary]){display:none}
+#select-summary-design .ss-board:not([data-current-view=all]) .ss-compact-surfaces{display:block}
+#select-summary-design .ss-board[data-current-view=onboarding] .ss-compact-surfaces{display:none}
+#select-summary-design .ss-board[data-current-view=popup] .ss-contained-preview{padding:30px}
+#select-summary-design .ss-board[data-current-view=summary] .ss-article-preview{max-width:850px;margin:auto;min-height:540px}
+#select-summary-design .ss-board[data-current-view=summary] .ss-article-copy{max-width:570px}
+#select-summary-design .ss-board[data-current-view=summary] #ss-floating-result{margin-top:8px}
+#select-summary-design .ss-reveal{animation:ss-reveal 200ms ease-out both}
+@keyframes ss-reveal{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+#select-summary-design[data-motion=off] *,#select-summary-design[data-motion=off] *::after{animation:none!important;transition:none!important}
+@media(max-width:760px){#select-summary-design .ss-compact-surfaces{grid-template-columns:1fr}#select-summary-design .ss-welcome-grid,#select-summary-design .ss-connect-grid,#select-summary-design .ss-ready-grid{grid-template-columns:1fr;gap:24px}#select-summary-design .ss-onboard-content{padding:26px;min-height:0}#select-summary-design .ss-hero-copy h1{max-width:480px}#select-summary-design .ss-practice-grid{grid-template-columns:1fr}#select-summary-design .ss-board{gap:24px}#select-summary-design .ss-article-preview{min-height:0}#select-summary-design .ss-preview-bar{padding-right:0}#select-summary-design .ss-app-header>.ss-small{display:none}}
+@media(max-width:400px){#select-summary-design .ss-onboard-content{padding:20px}#select-summary-design .ss-product h1{font-size:30px;letter-spacing:-1px}#select-summary-design .ss-app-header{padding:16px}#select-summary-design .ss-onboard-footer{padding:16px}#select-summary-design .ss-demo-sheet{padding:14px}#select-summary-design .ss-popup-content{padding:16px}#select-summary-design .ss-result{padding:14px}#select-summary-design .ss-contained-preview{padding:16px 0}#select-summary-design .ss-article-preview{padding:18px}#select-summary-design .ss-popup .ss-app-header{padding:16px}#select-summary-design .ss-popup-footer{font-size:11px}#select-summary-design .ss-result-header .ss-brand{font-size:12px}#select-summary-design .ss-key-guide{padding:18px}#select-summary-design .ss-onboard-footer{align-items:start}#select-summary-design .ss-onboard-footer .ss-actions{width:100%}#select-summary-design .ss-steps{gap:12px}#select-summary-design .ss-surface{min-width:0}
+#select-summary-design .ss-section-label>.viz-row{max-width:100%;flex-wrap:wrap;min-width:0}
+#select-summary-design .ss-section-label{align-items:start}}
+@media(prefers-reduced-motion:reduce){#select-summary-design *,#select-summary-design *::after{animation:none!important;transition:none!important}}
+@media(pointer:coarse){#select-summary-design .ss-product button{min-height:44px}#select-summary-design .ss-product input[type=password],#select-summary-design .ss-product input[type=text]{font-size:16px}}
+</style>
+<script>
+(()=>{
+const root=document.getElementById('select-summary-design');
+const q=s=>root.querySelector(s),qa=s=>Array.from(root.querySelectorAll(s));
+const sample='Toronto is Ontario’s capital and Canada’s largest city, shaped by immigration, diverse neighbourhoods, and its location on the shores of Lake Ontario.';
+const design={accent:'#1763e8',radius:14,density:'Comfortable',motion:true};
+const ui={view:'onboarding',stage:0,popup:'home',result:'result',practice:false,activity:false};
+const safeViews=['onboarding','popup','summary'];
+const safePopup=['home','history','settings'];
+let timer;
+const icon=name=>'<i data-lucide="'+name+'" aria-hidden="true"></i>';
+const brand=()=>'<div class="ss-brand"><img class="ss-logo" src="data:image/png;base64,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" alt=""/><span>Select Summary</span></div>';
+const steps=stage=>'<div class="ss-steps" aria-label="Setup progress">'+['Connect','Try it','Ready'].map((label,i)=>'<span class="ss-step '+(stage===i+1?'is-current':'')+'" '+(stage===i+1?'aria-current="step"':'')+'><span class="ss-step-number">'+(stage>i+1?'✓':i+1)+'</span>'+label+'</span>').join('')+'</div>';
+function resultCard({close=false,kind='result',history=false,text=sample}={}){
+let body=kind==='loading'?'<div class="ss-result-body ss-subtle">Summarizing your selection…</div><div class="ss-loading-indicator" aria-hidden="true"></div>':kind==='error'?'<div class="ss-error-content" role="alert"><h3>Couldn’t reach Gemini</h3><p>Check your connection, then try again.</p></div>':'<p class="ss-result-body">'+text+'</p>';
+let footer=kind==='loading'?'<span class="ss-result-meta">You can keep reading.</span>':kind==='error'?'<span class="ss-result-meta">Your selection is still here.</span><button class="ss-primary" data-act="retry">Try again '+icon('rotate-ccw')+'</button>':'<span class="ss-result-meta">'+(history?'Saved on this device':'Saved to history')+'</span><button class="ss-primary" data-act="copy">'+icon('copy')+'<span>Copy</span></button>';
+return '<div class="ss-result ss-reveal"><header class="ss-result-header">'+brand()+(close?'<button class="ss-icon-button" aria-label="Close summary" data-act="close-result">'+icon('x')+'</button>':'')+'</header>'+body+'<footer class="ss-result-footer">'+footer+'</footer></div>';
+}
+function renderOnboarding(){
+let content='',actions='',caption='';
+if(ui.stage===0){content='<div class="ss-welcome-grid"><div class="ss-hero-copy"><span class="ss-eyebrow">Meet your reading shortcut</span><h1>Less reading.<br>More understanding.</h1><p class="ss-lead">Turn a highlighted passage into a clear, concise summary. Stay on the page. Keep the useful part.</p><div class="ss-actions"><button class="ss-primary" data-act="get-started">Get started '+icon('arrow-right')+'</button></div><p class="ss-hero-note">Uses your Gemini key. We’ll help you connect it.</p></div><div class="ss-demo-sheet"><div class="ss-source-label">Highlight a passage</div><p class="ss-selected-copy"><mark>Toronto is Ontario’s capital and Canada’s largest city. Immigration has shaped its neighbourhoods, languages and culture.</mark></p>'+resultCard({text:'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and culture shaped by immigration.'})+'</div></div>';caption='Your summaries and history, in one place.';actions='<button class="ss-text-button" data-act="open-popup">Already connected? Open extension '+icon('arrow-up-right')+'</button>';}
+if(ui.stage===1){content='<div>'+steps(1)+'<div class="ss-connect-grid"><div><span class="ss-eyebrow">One quick connection</span><h1>Connect your AI.</h1><p class="ss-lead">Select Summary uses Google Gemini to summarize your text. Your API key connects the two.</p><form class="ss-form" id="ss-key-form"><div><label class="ss-form-label" for="ss-example-key">Gemini API key</label><input id="ss-example-key" type="password" value="example-key-4K2A" autocomplete="off" spellcheck="false" aria-describedby="ss-key-notice" /></div><label class="ss-check"><input type="checkbox" id="ss-consent" /><span>I understand my selected text is sent to Google.</span></label><p class="ss-small ss-subtle" id="ss-key-notice">Free-tier content may be used for product improvement or human review. Avoid sensitive text.</p><p class="ss-form-feedback" id="ss-key-feedback" role="status" hidden></p></form></div><aside class="ss-key-guide"><h3>Don’t have a key yet?</h3><a class="ss-external-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a Gemini key ↗</a><ol><li><strong>Open Google AI Studio</strong>Sign in with your Google account.</li><li><strong>Create an API key</strong>Choose a project with billing disabled.</li><li><strong>Come back and paste it</strong>Your key stays saved in this browser.</li></ol><details><summary>Free tier & data details</summary><p>Google’s free-tier availability and limits apply. Billing-enabled projects can incur charges. Keys are stored locally, without extension encryption.</p></details></aside></div></div>';caption='Connecting checks your key once.';actions='<button data-act="back-onboard">Back</button><button class="ss-primary" data-act="connect">Connect Gemini '+icon('arrow-right')+'</button>';}
+if(ui.stage===2){content='<div>'+steps(2)+'<span class="ss-eyebrow">Your first summary</span><h1>Try it on a little text.</h1><p class="ss-lead">Highlight a sentence below, then right-click and choose <strong>Summarize selection</strong>.</p><div class="ss-practice-grid"><div class="ss-practice-passage"><div class="ss-source-label">Practice passage</div><h3>A little about Toronto</h3><p id="ss-practice-text">Toronto is Ontario’s capital and Canada’s largest city. Immigration has shaped its neighbourhoods, languages and culture. Its parks, ravines and waterfront are part of everyday life along Lake Ontario.</p><p class="ss-practice-helper">Or highlight text and press <kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>S</kbd></p></div><div>'+(ui.practice?resultCard()+'<p class="ss-success">'+icon('circle-check')+'You did it. This works on webpages, too.</p>':'<div class="ss-await-result"><h3>A shorter version, right here.</h3><p class="ss-small ss-subtle">Your summary will appear beside the text and stay until you close it.</p><button class="ss-primary" data-act="practice">Show an example '+icon('arrow-right')+'</button></div>')+'</div></div></div>';caption=ui.practice?'First summary complete. You’re ready.':'Practice is optional. You can come back anytime.';actions='<button data-act="back-onboard">Back</button><button class="'+(ui.practice?'ss-primary':'')+'" data-act="next-onboard">'+(ui.practice?'Continue':'Practice later')+' '+icon('arrow-right')+'</button>';}
+if(ui.stage===3){content='<div>'+steps(3)+'<div class="ss-ready-grid"><div><span class="ss-eyebrow">All set</span><h1>A shortcut to<br>the useful part.</h1><p class="ss-lead">Highlight text on any supported webpage, then right-click → Summarize selection.</p><div class="ss-shortcut" style="margin-top:22px"><span>Your keyboard shortcut</span><span><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>S</kbd></span></div><p class="ss-success">'+icon('circle-check')+'Gemini is connected. Your history stays local.</p></div><aside class="ss-pin-guide"><span class="ss-eyebrow">Optional</span><h3>Keep it within reach.</h3><p class="ss-small ss-subtle" style="margin-top:8px">Pin Select Summary in Chrome’s toolbar.</p><ol><li>Open Chrome’s <strong>Extensions</strong> menu.</li><li>Find <strong>Select Summary</strong>.</li><li>Click the pin beside its name.</li></ol></aside></div></div>';caption='You can reopen this guide from Settings.';actions='<button data-act="back-onboard">Back</button><button class="ss-primary" data-act="open-popup">Open Select Summary '+icon('arrow-right')+'</button>';}
+q('#ss-onboard-content').innerHTML=content;q('#ss-onboard-actions').innerHTML=actions;q('#ss-step-description').textContent=caption;qa('[data-stage]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.stage)===ui.stage)));
+}
+function renderPopup(){
+q('.ss-popup').dataset.activity=String(ui.activity);
+let html='';
+if(ui.popup==='home')html='<div class="ss-shortcut"><span>Highlight text, then press</span><span><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>S</kbd></span></div><div class="ss-popup-section-title"><h3>Latest summary</h3><button class="ss-text-button" data-popup="history">View history '+icon('arrow-right')+'</button></div>'+resultCard({history:true})+'<div class="ss-popup-metrics"><div><strong>12</strong><span>Summaries this week</span></div><div><strong>8 min</strong><span>Estimated time saved</span></div></div><button class="ss-text-button" data-act="activity" aria-expanded="'+ui.activity+'" style="margin-top:10px">'+(ui.activity?'Hide activity':'View reading activity')+' '+icon(ui.activity?'chevron-up':'chevron-down')+'</button>'+(ui.activity?'<div class="ss-activity-detail"><h3>Your reading activity</h3><div class="ss-activity-days" aria-label="Daily summaries: 1, 3, 2, 0, 4, 1, 1">'+[.28,.75,.5,.08,1,.28,.28].map(n=>'<span class="ss-activity-day" style="--level:'+n+'"></span>').join('')+'</div><p>3-day streak · Best streak: 5 days</p><p>600 XP · First Summary earned</p></div>':'');
+if(ui.popup==='history')html='<h2>Your useful bits.</h2><p class="ss-popup-intro">Your 10 most recent summaries. Saved on this device.</p><div class="ss-history-list"><div><div class="ss-history-meta"><span>Today, 10:42 AM</span><span>Toronto</span></div>'+resultCard({history:true})+'</div><div><div class="ss-history-meta"><span>Yesterday, 3:18 PM</span><span>Hash tables</span></div>'+resultCard({history:true,text:'Hash tables provide fast average lookups by mapping keys to array positions, while collisions require extra handling and resizing.'})+'</div></div>';
+if(ui.popup==='settings')html='<h2>Make it yours.</h2><div class="ss-setting"><div class="ss-setting-head"><h3>Gemini connection</h3><span class="ss-connected ss-small">'+icon('circle-check')+'Connected</span></div><p>Key ending in 4K2A</p><button class="ss-text-button" data-act="change-key">Change key '+icon('arrow-up-right')+'</button></div><div class="ss-setting"><h3>Privacy</h3><p>History and activity stay on this device. Selected text goes directly to Google.</p><details><summary>Google data use & costs</summary><p>Free-tier content may be used for product improvement or human review. Billing-enabled projects can incur charges. Avoid sensitive text.</p></details></div><div class="ss-setting"><h3>Shortcuts</h3><p>Summarize <kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>S</kbd> · Open <kbd>⌥</kbd> <kbd>G</kbd></p><button class="ss-text-button" data-act="shortcut-guide">Customize shortcuts '+icon('arrow-up-right')+'</button><p id="ss-shortcut-guide" hidden>In Chrome, open Extensions → Keyboard shortcuts to change these keys.</p></div><div class="ss-setting"><div class="ss-setting-head"><h3>Welcome guide</h3><button class="ss-text-button" data-act="reopen-guide">Revisit '+icon('arrow-right')+'</button></div></div>';
+q('#ss-popup-content').innerHTML=html;qa('.ss-popup-nav [data-popup]').forEach(b=>{if(b.dataset.popup===ui.popup)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+}
+function renderResult(){q('#ss-floating-result').innerHTML=ui.result==='closed'?'<button data-act="restore-result" class="ss-primary">Show summary '+icon('arrow-up-right')+'</button>':resultCard({close:true,kind:ui.result});qa('[data-result]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.result===ui.result)));}
+function renderDesign(){root.style.setProperty('--ss-accent',design.accent);root.style.setProperty('--ss-radius',design.radius+'px');root.style.setProperty('--ss-space',design.density==='Compact'?'18px':'24px');root.dataset.motion=design.motion?'on':'off';}
+function renderView(){q('.ss-board').dataset.currentView=ui.view;qa('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===ui.view)));}
+function icons(){qa('.ss-product button, .ss-product summary, .ss-product a').forEach(e=>e.classList.add('cursor-interaction'));if(globalThis.lucide)globalThis.lucide.createIcons({attrs:{width:16,height:16}});}
+function persist(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{concept:'Select Summary unified design',accent:design.accent,density:design.density},privateContent:{...ui,design:{...design}}}).catch(()=>{});}
+function restore(saved){const previous=saved?.privateContent;if(!previous)return;if(safeViews.includes(previous.view))ui.view=previous.view;if(safePopup.includes(previous.popup))ui.popup=previous.popup;if(Number.isInteger(previous.stage)&&previous.stage>=0&&previous.stage<=3)ui.stage=previous.stage;if(['result','loading','error','closed'].includes(previous.result))ui.result=previous.result;ui.practice=previous.practice===true;ui.activity=previous.activity===true;if(previous.design){const d=previous.design;if(/^#[0-9a-f]{6}$/i.test(d.accent))design.accent=d.accent;if(d.radius>=8&&d.radius<=22)design.radius=d.radius;if(['Compact','Comfortable'].includes(d.density))design.density=d.density;if(typeof d.motion==='boolean')design.motion=d.motion;}}
+function renderAll(){renderDesign();renderView();renderOnboarding();renderPopup();renderResult();icons();}
+root.addEventListener('submit',e=>{e.preventDefault();});
+root.addEventListener('click',e=>{
+const button=e.target.closest('button');if(!button||!root.contains(button))return;
+if(button.dataset.view){ui.view=button.dataset.view;renderView();persist();return;}
+if(button.dataset.stage){ui.stage=Number(button.dataset.stage);renderOnboarding();icons();persist();return;}
+if(button.dataset.popup){ui.popup=button.dataset.popup;renderPopup();icons();persist();return;}
+if(button.dataset.result){clearTimeout(timer);ui.result=button.dataset.result;renderResult();icons();persist();return;}
+const action=button.dataset.act;
+if(action==='copy'){const label=button.querySelector('span');if(label)label.textContent='Copied';button.setAttribute('aria-label','Summary copied');return;}
+if(action==='get-started'){ui.stage=1;renderOnboarding();}
+if(action==='back-onboard'){ui.stage=Math.max(0,ui.stage-1);renderOnboarding();}
+if(action==='next-onboard'){ui.stage=Math.min(3,ui.stage+1);renderOnboarding();}
+if(action==='connect'){
+const feedback=q('#ss-key-feedback');if(!q('#ss-example-key').value.trim()||!q('#ss-consent').checked){feedback.textContent='Add a key and accept the Google data notice to continue.';feedback.hidden=false;return;}
+button.textContent='Connecting…';button.disabled=true;timer=setTimeout(()=>{ui.stage=2;renderOnboarding();icons();persist();},550);return;
+}
+if(action==='practice'){ui.practice=true;renderOnboarding();}
+if(action==='open-popup'){ui.view='popup';ui.popup='home';renderView();renderPopup();}
+if(action==='settings'){ui.popup='settings';renderPopup();}
+if(action==='activity'){ui.activity=!ui.activity;renderPopup();}
+if(action==='change-key'){ui.view='onboarding';ui.stage=1;renderView();renderOnboarding();}
+if(action==='reopen-guide'){ui.view='onboarding';ui.stage=0;renderView();renderOnboarding();}
+if(action==='shortcut-guide'){q('#ss-shortcut-guide').hidden=!q('#ss-shortcut-guide').hidden;}
+if(action==='close-result'){ui.result='closed';renderResult();}
+if(action==='restore-result'){ui.result='result';renderResult();}
+if(action==='retry'){ui.result='loading';renderResult();icons();timer=setTimeout(()=>{ui.result='result';renderResult();icons();persist();},700);}
+icons();persist();
+});
+restore(window.openai?.widgetState);renderAll();
+window.addEventListener('openai:set_globals',event=>{if(event.detail?.globals?.widgetState){restore(event.detail.globals.widgetState);renderAll();}});
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>{renderDesign();persist();}});tweak.addColorPicker(design,'accent',{label:'Accent across all surfaces',reference:'--ss-accent'});tweak.addSlider(design,'radius',{label:'Corner radius',min:8,max:22,step:1,unit:'px'});tweak.addSelect(design,'density',{label:'Spacing',options:['Comfortable','Compact']});tweak.addToggle(design,'motion',{label:'Gentle transitions'});}
+})();
+</script>

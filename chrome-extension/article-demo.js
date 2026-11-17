@@ -39,11 +39,14 @@ export function createArticleDemo(onSummarize) {
     $('#restore-summary').hidden = !summaries.has(articleId);
   }
   function showCard(payload) {
-    if (!card?.host.isConnected)
+    if (!card?.host.isConnected || card.host.dataset.closing === 'true')
       card = globalThis.SelectSummaryCard.create({
         container: viewport,
         placement: 'embedded',
-        onClose: restoreButton
+        onClose({ kind, reason }) {
+          if (kind === 'loading' && reason === 'manual') revision++;
+          restoreButton();
+        }
       });
     card.update(payload);
     $('#restore-summary').hidden = true;
@@ -77,9 +80,12 @@ export function createArticleDemo(onSummarize) {
           ? articleOrder[0]
           : event.key === 'End'
             ? articleOrder.at(-1)
-            : articleId === 'hash'
-              ? 'toronto'
-              : 'hash';
+            : articleOrder[
+                (articleOrder.indexOf(articleId) +
+                  (event.key === 'ArrowRight' ? 1 : -1) +
+                  articleOrder.length) %
+                  articleOrder.length
+              ];
       switchArticle(id);
       $(`#tab-${id}`).focus();
     });
@@ -140,7 +146,7 @@ export function createArticleDemo(onSummarize) {
         current = revision;
       $('#sandbox-status').textContent = '';
       $('#sandbox-status').hidden = true;
-      showCard({ kind: 'loading', text: 'Summarizing…' });
+      showCard({ kind: 'loading' });
       try {
         const result = await onSummarize({
           articleId: id,

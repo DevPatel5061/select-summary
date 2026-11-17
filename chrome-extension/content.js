@@ -14,12 +14,12 @@
       return;
     if (
       !['summary', 'loading', 'error'].includes(message.kind) ||
-      typeof message.text !== 'string'
+      (message.kind !== 'loading' && typeof message.text !== 'string')
     )
       return;
     if (message.kind === 'loading') dismissedWhileLoading = false;
     if (dismissedWhileLoading && message.kind !== 'loading') return;
-    if (!card?.host.isConnected) {
+    if (!card?.host.isConnected || card.host.dataset.closing === 'true') {
       card = globalThis.SelectSummaryCard.create({
         onClose({ kind, reason }) {
           dismissedWhileLoading = kind === 'loading' && reason === 'manual';

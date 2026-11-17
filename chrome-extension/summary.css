@@ -1,78 +1,85 @@
 :host {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: #151b28;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #252723;
   color-scheme: light;
   direction: ltr;
   text-align: left;
 }
-
 * {
   box-sizing: border-box;
 }
-
 .card {
   width: 100%;
   padding: 18px;
-  background: #fff;
-  border: 1px solid #dce5f1;
-  border-radius: 16px;
+  background: white;
+  border: 1px solid #e5e3dc;
+  border-radius: 13px;
   box-shadow:
-    0 12px 60px #122c5430,
-    0 2px 8px #122c5410;
+    0 12px 40px #15473e1a,
+    0 2px 8px #15473e0d;
   font-family: inherit;
-  animation: arrive 0.22s ease-out;
 }
-
+.card.is-entering {
+  animation: arrive 200ms ease-out both;
+}
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .brand {
-  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  line-height: 1.3;
   font-weight: 600;
-  color: #0868e8;
+  color: #15473e;
   letter-spacing: -0.3px;
+}
+.brand img {
+  display: block;
+  border-radius: 5px;
+  flex-shrink: 0;
 }
 button {
   font: inherit;
   cursor: pointer;
   border: 0;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 7px;
+  padding: 9px 13px;
   transition:
-    background 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
+    background 160ms,
+    transform 160ms;
 }
 button:focus-visible {
-  outline: 3px solid #6c9ff0;
+  outline: 3px solid #8cafa6;
   outline-offset: 3px;
 }
 .close {
-  width: 36px;
-  height: 36px;
-  padding: 2px;
+  width: 30px;
+  height: 30px;
+  padding: 1px;
   background: transparent;
-  color: #636e80;
+  color: #686a63;
   flex-shrink: 0;
 }
 .close:hover {
-  background: #eaf2ff;
-  color: #525d6e;
+  background: #e6f0ee;
 }
 .close svg {
   display: block;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
 }
 .timer-track {
-  stroke: #e7ebf1;
+  stroke: #e5e3dc;
 }
 .timer-progress {
-  stroke: #b8c0cc;
+  stroke: #a4b7ae;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
   transform: rotate(-90deg);
@@ -85,80 +92,91 @@ button:focus-visible {
   max-height: min(300px, 45vh);
   overflow: auto;
   font-size: 14px;
-  line-height: 1.65;
-  color: #354052;
+  line-height: 1.75;
+  color: #40483f;
   margin: 0;
   user-select: text;
+}
+.text::selection {
+  background: #e6f0ee;
+  color: #15473e;
 }
 .actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 .copy {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   min-height: 36px;
-  background: #0868e8;
+  background: #15473e;
   color: white;
   font-size: 12px;
+  font-weight: 550;
 }
 .copy svg {
   width: 16px;
   height: 16px;
 }
 .copy:hover {
-  background: #075fd4;
-  box-shadow:
-    inset 0 -3px 7px #003b8f33,
-    0 4px 12px #0868e81c;
-  transform: translateY(-1px);
+  background: #0f352e;
 }
 .copy:active {
-  transform: translateY(0);
-  box-shadow: inset 0 2px 5px #003b8f40;
+  transform: translateY(1px);
 }
-.progress {
-  height: 3px;
-  background: linear-gradient(90deg, #eaf2ff, #0868e8, #eaf2ff);
-  background-size: 200% 100%;
-  animation: progress 1.5s linear infinite;
+.skeleton {
+  display: grid;
+  gap: 11px;
+  padding: 8px 0 12px;
+}
+.skeleton span {
+  display: block;
+  height: 13px;
   border-radius: 4px;
-  margin-top: 17px;
+  background: #eceee8;
+  animation: skeleton-pulse 1200ms ease-in-out infinite alternate;
+}
+.skeleton span:nth-child(2) {
+  width: 92%;
+}
+.skeleton span:last-child {
+  width: 65%;
 }
 .error {
-  border: 0;
-  background: #fff0f1;
+  border-color: #edcfca;
+  background: #fff0ee;
 }
 .error .brand,
 .error .text,
 .error .close {
-  color: #b42335;
+  color: #a93d3d;
 }
 .error .timer-track {
-  stroke: #f4d5da;
+  stroke: #eacec9;
 }
 .error .timer-progress {
-  stroke: #d9939e;
+  stroke: #cb9f96;
 }
-
 @keyframes arrive {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(7px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
-@keyframes progress {
+@keyframes skeleton-pulse {
+  from {
+    background-color: #eceee8;
+  }
   to {
-    background-position: -200% 0;
+    background-color: #cdd4cb;
   }
 }
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -166,7 +184,6 @@ button:focus-visible {
     animation: none !important;
     transition: none !important;
   }
-  /* Automatic dismissal still works without a moving countdown. */
   .timer-progress {
     stroke-dashoffset: 0;
   }

@@ -1,5 +1,7 @@
 import {
   AppError,
+  HISTORY_LIMITS,
+  INTERFACE_VERSION,
   addSummary,
   initialState,
   isAppSender,
@@ -33,7 +35,7 @@ async function notice(level, title, message) {
   await chrome.storage.session.set({
     notice: { id: crypto.randomUUID(), level, title, message }
   });
-  await chrome.action.setBadgeBackgroundColor({ color: '#0868e8' });
+  await chrome.action.setBadgeBackgroundColor({ color: '#15473e' });
   await chrome.action.setBadgeText({
     text:
       level === 'error' ? '!' : level === 'info' ? '1' : activeCount ? '…' : ''
@@ -98,7 +100,7 @@ async function handleSelection(selection, tab) {
         'Open Select Summary and connect your Gemini key.'
       );
     await notice('loading', 'Summarizing', 'Waiting for Gemini.');
-    loadingCard = showCard(tab.id, { kind: 'loading', text: 'Summarizing…' });
+    loadingCard = showCard(tab.id, { kind: 'loading' });
     const text = await summarize(source, state.key);
     await loadingCard;
     await store.update((current) => {
@@ -266,10 +268,7 @@ async function summarizeDemo(message, sender) {
         Date.now(),
         message.requestId
       );
-      return {
-        ...next,
-        onboarding: { ...next.onboarding, sandboxComplete: true }
-      };
+      return next;
     });
     // A response from an older walkthrough must never unlock a restarted one.
     await updateWelcomeSession(session.key, (currentRun) =>
@@ -301,41 +300,43 @@ async function appRequest(message, sender) {
       return {};
     }
     case 'GET_STATE': {
-      const [stored, session, platform, commands] = await Promise.all([
+      const [stored, session] = await Promise.all([
         store.read(),
-        chrome.storage.session.get('notice'),
-        chrome.runtime.getPlatformInfo(),
-        chrome.commands.getAll()
+        chrome.storage.session.get('notice')
       ]);
       return {
-        interfaceVersion: 3,
+        interfaceVersion: INTERFACE_VERSION,
         state: publicState(stored),
-        platform: platform.os,
-        shortcut:
-          commands.find((command) => command.name === 'summarize-selection')
-            ?.shortcut || '',
         notice:
           session.notice?.level === 'loading' && !activeCount
             ? null
             : session.notice || null
       };
     }
+    case 'GET_METADATA': {
+      const [platform, commands] = await Promise.all([
+        chrome.runtime.getPlatformInfo(),
+        chrome.commands.getAll()
+      ]);
+      return {
+        platform: platform.os,
+        shortcut:
+          commands.find((command) => command.name === 'summarize-selection')
+            ?.shortcut || ''
+      };
+    }
     case 'OPEN_WELCOME':
       await openWelcome();
       return {};
-    case 'SET_WELCOME_STEP':
+    case 'SET_WELCOME_STEP': {
       await welcomeRun(message, sender, message.step === 3);
       if (![1, 2, 3].includes(message.step))
         throw new AppError('MESSAGE', 'Invalid welcome step.');
-      await store.update((state) => {
-        if (message.step >= 2 && !state.keyValidated)
-          throw new AppError('NO_KEY', 'Verify your Gemini key first.');
-        return {
-          ...state,
-          onboarding: { ...state.onboarding, step: message.step }
-        };
-      });
+      const state = await store.read();
+      if (message.step >= 2 && !state.keyValidated)
+        throw new AppError('NO_KEY', 'Verify your Gemini key first.');
       return {};
+    }
     case 'CONNECT_KEY': {
       if (connecting)
         throw new AppError('BUSY', 'A connection check is already running.');
@@ -374,8 +375,7 @@ async function appRequest(message, sender) {
             ...state,
             key: key.trim(),
             keyValidated: true,
-            credentialRevision: state.credentialRevision + 1,
-            onboarding: { ...state.onboarding, step: 2 }
+            credentialRevision: state.credentialRevision + 1
           };
         });
         return {};
@@ -392,9 +392,55 @@ async function appRequest(message, sender) {
           throw new AppError('NO_KEY', 'Verify your Gemini key first.');
         return {
           ...state,
-          onboarding: { ...state.onboarding, step: 3, completed: true }
+          onboarding: { completed: true }
         };
       });
+      return {};
+    case 'OPEN_TOOLBAR_POPUP': {
+      await welcomeRun(message, sender, true);
+      const state = await store.read();
+      if (!state.keyValidated || !state.onboarding.completed)
+        throw new AppError(
+          'NO_KEY',
+          'Finish setup before opening Select Summary.'
+        );
+      // Open against another active tab so removing the inactive guide does not
+      // dismiss the popup. Keep the guide available if opening fails.
+      const tabs = await chrome.tabs.query({ windowId: sender.tab.windowId });
+      let target = tabs.find((tab) => tab.id !== sender.tab.id);
+      const needsNewTab = !target;
+      if (!target) {
+        // Closing a window's only tab would also destroy its toolbar popup.
+        target = await chrome.tabs.create({
+          windowId: sender.tab.windowId,
+          active: false
+        });
+      }
+      try {
+        await chrome.tabs.update(target.id, { active: true });
+        await chrome.action.openPopup({ windowId: sender.tab.windowId });
+      } catch {
+        await chrome.tabs.update(sender.tab.id, { active: true });
+        if (needsNewTab) await chrome.tabs.remove(target.id);
+        throw new AppError(
+          'POPUP',
+          'Your browser could not open the popup. Open Select Summary from your browser’s Extensions menu.'
+        );
+      }
+      await chrome.tabs.remove(sender.tab.id);
+      return {};
+    }
+    case 'SET_HISTORY_LIMIT':
+      if (!HISTORY_LIMITS.includes(message.limit))
+        throw new AppError(
+          'MESSAGE',
+          'Choose a history limit of 5, 10, 15, or 20.'
+        );
+      await store.update((state) => ({
+        ...state,
+        historyLimit: message.limit,
+        history: state.history.slice(0, message.limit)
+      }));
       return {};
     case 'CLEAR_HISTORY':
       await store.update((state) => ({ ...state, history: [] }));
@@ -406,12 +452,7 @@ async function appRequest(message, sender) {
         key: null,
         keyValidated: false,
         credentialRevision: state.credentialRevision + 1,
-        onboarding: {
-          version: 1,
-          step: 1,
-          completed: false,
-          sandboxComplete: false
-        }
+        onboarding: { completed: false }
       }));
       return {};
     case 'RESET_ALL':

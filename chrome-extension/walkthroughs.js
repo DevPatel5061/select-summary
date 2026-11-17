@@ -1,3 +1,5 @@
+import { timeline, TIMING } from './shared/timeline.js';
+
 // These are bundled illustrations. Animated clicks never touch a real form,
 // clipboard, Google account, browser toolbar, or provider request.
 export function createWalkthroughs(onError) {
@@ -5,6 +7,13 @@ export function createWalkthroughs(onError) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const tracks = new Map();
   let active;
+  const exampleSummary =
+    'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and a culture shaped by immigration.';
+  const introCard = globalThis.SelectSummaryCard.create({
+    container: $('#intro-result'),
+    placement: 'embedded',
+    autoDismiss: false
+  });
 
   function createTrack(
     name,
@@ -107,7 +116,7 @@ export function createWalkthroughs(onError) {
         animation.cancel();
       }
     }
-    async function point(x, y, signal, duration = 500) {
+    async function point(x, y, signal, duration = TIMING.move) {
       const transform = `translate(${x}px, ${y}px)`;
       pointer.hidden = false;
       await animate(
@@ -117,7 +126,7 @@ export function createWalkthroughs(onError) {
         signal
       );
     }
-    async function move(target, signal, duration = 500) {
+    async function move(target, signal, duration = TIMING.move) {
       const node = typeof target === 'string' ? $(target) : target;
       const bounds = node.getBoundingClientRect();
       const origin = surface.getBoundingClientRect();
@@ -132,12 +141,12 @@ export function createWalkthroughs(onError) {
       const node = typeof target === 'string' ? $(target) : target;
       node.classList.add('is-hovered');
       try {
-        await wait(200, signal);
+        await wait(TIMING.hover, signal);
         node.classList.add('is-pressed');
         pointer.classList.add('is-clicking');
-        await wait(140, signal);
+        await wait(TIMING.down, signal);
         action();
-        await wait(100, signal);
+        await wait(TIMING.release, signal);
       } finally {
         node.classList.remove('is-hovered', 'is-pressed');
         pointer.classList.remove('is-clicking');
@@ -148,7 +157,7 @@ export function createWalkthroughs(onError) {
       node.textContent = '';
       for (const character of text) {
         node.textContent += character;
-        await wait(55, signal);
+        await wait(TIMING.character, signal);
       }
     }
     function pause(automatic = false) {
@@ -214,7 +223,7 @@ export function createWalkthroughs(onError) {
                   animate(
                     meter,
                     [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
-                    [2840, 5690, 8000, 3440][scene],
+                    scenes[scene].duration,
                     signal
                   )
                 ]);
@@ -247,7 +256,11 @@ export function createWalkthroughs(onError) {
         pause(true);
       },
       resume() {
-        if (automaticallyPaused) resume();
+        if (
+          automaticallyPaused ||
+          (!controller && visited && !reducedMotion.matches)
+        )
+          resume();
       },
       resize() {
         if (!visited || ended || reducedMotion.matches) return;
@@ -272,8 +285,12 @@ export function createWalkthroughs(onError) {
         label.textContent = scenes[index].caption;
         update();
       },
-      motionChanged() {
+      motionChanged(shouldPlay) {
         if (!visited) return;
+        if (shouldPlay) {
+          start();
+          return;
+        }
         abort();
         index = scenes.length - 1;
         paint(index);
@@ -296,10 +313,7 @@ export function createWalkthroughs(onError) {
       $('#intro-selection').classList.toggle('is-selected', index > 0);
       $('#intro-menu').hidden = index !== 1;
       $('#intro-result').hidden = index < 2;
-      $('#intro-loading').hidden = true;
-      $('#intro-result-footer').hidden = false;
-      $('#intro-result-text').textContent =
-        'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and a culture shaped by immigration.';
+      introCard.update({ kind: 'summary', text: exampleSummary });
     },
     scenes: [
       {
@@ -337,14 +351,9 @@ export function createWalkthroughs(onError) {
         caption: 'A concise summary appears without leaving the page.',
         async run(a) {
           $('#intro-menu').hidden = true;
-          $('#intro-result-text').textContent = 'Summarizing…';
-          $('#intro-result-footer').hidden = true;
-          $('#intro-loading').hidden = false;
+          introCard.update({ kind: 'loading' });
           await a.wait(1000);
-          $('#intro-result-text').textContent =
-            'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and a culture shaped by immigration.';
-          $('#intro-result-footer').hidden = false;
-          $('#intro-loading').hidden = true;
+          introCard.update({ kind: 'summary', text: exampleSummary });
           await a.wait(1400);
         }
       }
@@ -380,65 +389,81 @@ export function createWalkthroughs(onError) {
       {
         caption:
           'Open API Keys in Google AI Studio, then choose Create API key.',
-        async run(a) {
-          await a.wait(1300);
-          await a.move('#mock-create', 650);
-          await a.press('#mock-create');
-          await a.wait(450);
-        }
+        ...timeline([
+          ['wait', 1300],
+          ['move', '#mock-create', 650],
+          ['press', '#mock-create'],
+          ['wait', 450]
+        ])
       },
       {
         caption:
           'Name your key, then choose a project. Already have one? You can use it.',
-        async run(a) {
-          $('#mock-name').textContent = '';
-          await a.wait(700);
-          await a.move('#mock-name');
-          await a.type('#mock-name', 'Select Summary');
-          await a.wait(650);
-          await a.move('#mock-project');
-          await a.press('#mock-project', () => projectOptions(false));
-          await a.wait(700);
-          await a.move('#mock-new-project');
-          await a.press('#mock-new-project');
-        }
+        ...timeline([
+          () => {
+            $('#mock-name').textContent = '';
+          },
+          ['wait', 700],
+          ['move', '#mock-name'],
+          ['type', '#mock-name', 'Select Summary'],
+          ['wait', 650],
+          ['move', '#mock-project'],
+          ['press', '#mock-project', () => projectOptions(false)],
+          ['wait', 700],
+          ['move', '#mock-new-project'],
+          ['press', '#mock-new-project']
+        ])
       },
       {
         caption:
           'For a new project, give it a name and select it for your key.',
-        async run(a) {
-          $('#mock-project-name').textContent = '';
-          await a.wait(850);
-          await a.move('#mock-project-name');
-          await a.type('#mock-project-name', 'Select Summary');
-          await a.wait(650);
-          await a.move('#mock-project-create');
-          await a.press('#mock-project-create', () => {
-            studioScene(1);
-            projectOptions(true);
-          });
-          await a.wait(750);
-          await a.move('#mock-project-option');
-          await a.press('#mock-project-option', () => {
-            $('#mock-options').hidden = true;
-            $('#mock-project-label').textContent = 'Select Summary';
-          });
-          await a.wait(700);
-          await a.move('#mock-create-confirm');
-          await a.press('#mock-create-confirm');
-        }
+        ...timeline([
+          () => {
+            $('#mock-project-name').textContent = '';
+          },
+          ['wait', 850],
+          ['move', '#mock-project-name'],
+          ['type', '#mock-project-name', 'Select Summary'],
+          ['wait', 650],
+          ['move', '#mock-project-create'],
+          [
+            'press',
+            '#mock-project-create',
+            () => {
+              studioScene(1);
+              projectOptions(true);
+            }
+          ],
+          ['wait', 750],
+          ['move', '#mock-project-option'],
+          [
+            'press',
+            '#mock-project-option',
+            () => {
+              $('#mock-options').hidden = true;
+              $('#mock-project-label').textContent = 'Select Summary';
+            }
+          ],
+          ['wait', 700],
+          ['move', '#mock-create-confirm'],
+          ['press', '#mock-create-confirm']
+        ])
       },
       {
         caption:
           'Copy the new key. Keep project billing disabled to use an eligible free tier.',
-        async run(a) {
-          await a.wait(1000);
-          await a.move('#mock-copy');
-          await a.press('#mock-copy', () => {
-            $('#mock-copy').lastChild.textContent = 'Copied';
-          });
-          await a.wait(1500);
-        }
+        ...timeline([
+          ['wait', 1000],
+          ['move', '#mock-copy'],
+          [
+            'press',
+            '#mock-copy',
+            () => {
+              $('#mock-copy').lastChild.textContent = 'Copied';
+            }
+          ],
+          ['wait', 1500]
+        ])
       }
     ],
     finished:
@@ -497,7 +522,11 @@ export function createWalkthroughs(onError) {
   });
 
   reducedMotion.addEventListener('change', () =>
-    tracks.forEach((track) => track.motionChanged())
+    tracks.forEach((track) =>
+      track.motionChanged(
+        !reducedMotion.matches && !document.hidden && track === active
+      )
+    )
   );
   return {
     show(step) {
@@ -519,6 +548,7 @@ export function createWalkthroughs(onError) {
     },
     stop() {
       tracks.forEach((track) => track.stop());
+      introCard.destroy();
     }
   };
 }

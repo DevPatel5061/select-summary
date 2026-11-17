@@ -1,5 +1,11 @@
-export const VERSION = 4;
+export const VERSION = 6;
+export const INTERFACE_VERSION = 4;
 export const HISTORY_LIMIT = 10;
+export const HISTORY_LIMITS = Object.freeze([5, 10, 15, 20]);
+export const historyLimitFor = (state) =>
+  HISTORY_LIMITS.includes(state.historyLimit)
+    ? state.historyLimit
+    : HISTORY_LIMIT;
 export const MAX_INPUT_LENGTH = 50_000;
 export const MODEL = 'gemini-3.5-flash-lite';
 export class AppError extends Error {
@@ -39,40 +45,36 @@ export function initialState() {
     keyValidated: false,
     credentialRevision: 0,
     history: [],
+    historyLimit: HISTORY_LIMIT,
     activity: {},
-    onboarding: {
-      version: 1,
-      step: 1,
-      completed: false,
-      sandboxComplete: false
-    },
-    milestones: { firstSummary: false }
+    onboarding: { completed: false }
   };
 }
 
 export function migrateState(data) {
   if (data.appState?.version === VERSION) return data.appState;
   if (data.appState) {
-    if (data.appState.version !== 3)
+    const previous = data.appState;
+    if (![3, 4, 5].includes(previous.version))
       throw new AppError(
         'VERSION',
         'This local data needs a compatible extension version.'
       );
-    const { onboardingStep, tutorialStep, tutorialComplete, ...previous } =
-      data.appState;
-    const hasActivity = activityStats(previous.activity || {}).total > 0;
-    const sandboxComplete = Boolean(tutorialStep >= 1 && hasActivity);
+    // Explicitly project supported fields; obsolete rewards and progress stay out.
     return {
       ...initialState(),
-      ...previous,
-      version: VERSION,
+      key: previous.key ?? null,
+      keyValidated: previous.keyValidated ?? false,
+      credentialRevision: previous.credentialRevision ?? 0,
+      history: previous.history ?? [],
+      historyLimit: historyLimitFor(previous),
+      activity: previous.activity ?? {},
       onboarding: {
-        version: 1,
-        step: !previous.keyValidated ? 1 : sandboxComplete ? 3 : 2,
-        completed: Boolean(tutorialComplete && previous.key),
-        sandboxComplete
-      },
-      milestones: { firstSummary: hasActivity }
+        completed:
+          previous.version === 3
+            ? Boolean(previous.tutorialComplete && previous.key)
+            : Boolean(previous.onboarding?.completed)
+      }
     };
   }
   const state = initialState();
@@ -80,7 +82,7 @@ export function migrateState(data) {
     typeof data.geminiApiKey === 'string'
       ? data.geminiApiKey.trim() || null
       : null;
-  // Preserve completed legacy installations without inventing historical XP.
+  // Preserve completed legacy installations without inventing historical activity.
   state.onboarding.completed = Boolean(state.key);
   state.history = (Array.isArray(data.summaries) ? data.summaries : [])
     .flatMap((entry, index) => {
@@ -113,11 +115,10 @@ export function addSummary(state, text, sourceWords, timestamp, id) {
   return {
     ...state,
     keyValidated: true,
-    milestones: { ...state.milestones, firstSummary: true },
     history: [
       { id, text, timestamp, sourceWords, summaryWords },
       ...state.history
-    ].slice(0, HISTORY_LIMIT),
+    ].slice(0, historyLimitFor(state)),
     activity: {
       ...state.activity,
       [day]: {
@@ -186,39 +187,21 @@ export function publicState(state) {
     keyValidated: state.keyValidated ?? false,
     keySuffix: state.key?.slice(-4) || '',
     history: state.history,
+    historyLimit: historyLimitFor(state),
     activity: state.activity,
-    onboarding: state.onboarding,
-    milestones: state.milestones,
-    xp: activityStats(state.activity).total * 50
+    onboarding: state.onboarding
   };
 }
 
-// Dashboard messages describe actual activity rather than generic marketing copy.
-export function dashboardMessage(stats) {
-  if (!stats.total)
-    return {
-      title: 'Ready for your first summary?',
-      detail: 'Highlight text on a webpage to get started.'
-    };
+// Headlines reflect actual activity; detailed counters are shown in the metrics.
+export function dashboardHeadline(stats) {
+  if (!stats.total) return 'Ready for your first summary?';
   if (stats.today > 0 && stats.today === stats.bestDay && stats.bestDay > 1)
-    return {
-      title: 'Your best day so far.',
-      detail: `${stats.today} summaries today · ${stats.total} in total.`
-    };
-  if (stats.currentStreak >= 2)
-    return {
-      title: `${stats.currentStreak} days in a row.`,
-      detail: `${stats.today} summaries today · ${stats.total} in total.`
-    };
+    return 'Your best day so far.';
+  if (stats.currentStreak >= 2) return `${stats.currentStreak} days in a row.`;
   if (stats.today)
-    return {
-      title: `${stats.today} ${stats.today === 1 ? 'summary' : 'summaries'} today.`,
-      detail: `${stats.total} in total.`
-    };
-  return {
-    title: 'Welcome back.',
-    detail: `${stats.total} summaries so far. Start today’s activity with a selection.`
-  };
+    return `${stats.today} ${stats.today === 1 ? 'summary' : 'summaries'} today.`;
+  return 'Welcome back.';
 }
 
 // Only our top-level UI documents may manage credentials or local history.

@@ -8,8 +8,6 @@ const prose = (text) =>
     .join('\n\n');
 export const DEMO_ARTICLES = Object.freeze({
   hash: {
-    title: 'Hash Table',
-    site: 'GeeksforGeeks',
     url: 'https://www.geeksforgeeks.org/dsa/hash-table-data-structure/',
     text: prose(`
       A hash table stores key–value pairs and uses a hash function to map each key
@@ -37,8 +35,6 @@ export const DEMO_ARTICLES = Object.freeze({
     `)
   },
   toronto: {
-    title: 'Toronto',
-    site: 'Wikipedia',
     url: 'https://en.wikipedia.org/wiki/Toronto',
     text: prose(`
       Toronto is Ontario’s capital and Canada’s largest city, located on Lake

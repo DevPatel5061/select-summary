@@ -27,7 +27,9 @@ export function matchesShortcut(event, keys) {
     metaKey: keys.includes('Command') || keys.includes('Meta')
   };
 
-  if (Object.entries(modifiers).some(([name, pressed]) => event[name] !== pressed))
+  if (
+    Object.entries(modifiers).some(([name, pressed]) => event[name] !== pressed)
+  )
     return false;
   const key = keys.at(-1).toUpperCase();
   return event.code === `Key${key}` || event.key.toUpperCase() === key;

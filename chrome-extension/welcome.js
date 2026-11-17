@@ -1,3 +1,6 @@
+import { createClient } from './shared/client.js';
+import { createKeyField } from './shared/key-field.js';
+import { createRefreshQueue } from './shared/refresh.js';
 import { decorateButtons } from './icons.js';
 import { shortcutKeys, matchesShortcut } from './shortcuts.js';
 import { createArticleDemo } from './article-demo.js';
@@ -11,7 +14,6 @@ let practiceComplete = false;
 let step = 0;
 let verifying = false;
 let changingKey = false;
-let snapshotSerial = 0;
 let keys = [];
 let shortcutSignature = '';
 let keyTimer;
@@ -24,31 +26,12 @@ const demo = createArticleDemo(async (fields) => {
   updatePractice();
   return result;
 });
-async function request(type, fields = {}) {
-  let response;
-  try {
-    response = await chrome.runtime.sendMessage({
-      type,
-      ...fields,
-      welcomeRunId
-    });
-  } catch {
-    throw new Error(
-      'The extension disconnected. Reload this page and try again.'
-    );
-  }
-  if (!response?.ok && response?.error?.message === 'Unknown request.')
-    throw new Error(
-      'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
-    );
-  if (!response?.ok)
-    throw Object.assign(
-      new Error(
-        response?.error?.message || 'Could not complete that action. Try again.'
-      ),
-      { code: response?.error?.code }
-    );
-  return response;
+const request = createClient(() => ({ welcomeRunId }));
+const { refresh: snapshot, mutate } = createRefreshQueue(loadSnapshot);
+const keyField = createKeyField($('#api-key'), $('#reveal-key'));
+async function refreshMetadata() {
+  const metadata = await request('GET_METADATA');
+  renderKeys(metadata.shortcut, metadata.platform);
 }
 function pageError(error) {
   $('#page-error').textContent = error.message;
@@ -135,16 +118,9 @@ function renderKeys(shortcut, platform) {
     ...[...root.childNodes].map((node) => node.cloneNode(true))
   );
 }
-async function snapshot() {
-  const serial = ++snapshotSerial;
+async function loadSnapshot() {
   const result = await request('GET_STATE');
-  if (result.interfaceVersion !== 3)
-    throw new Error(
-      'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
-    );
-  if (serial !== snapshotSerial) return;
   state = result.state;
-  renderKeys(result.shortcut, result.platform);
   if (!verifying) updateConnect();
   updatePractice();
 }
@@ -154,13 +130,12 @@ async function showStep(next, { persist = true, focus = true } = {}) {
   if (next === 3 && !practiceComplete) next = 2;
   if (persist && next > 0) {
     await request('SET_WELCOME_STEP', { step: next });
-    state.onboarding.step = next;
   }
   step = next;
   demo.setEnabled(step === 2);
   clearKeys();
   $('#page-error').hidden = true;
-  $('#setup-progress').hidden = step === 0;
+  $('#setup-progress').hidden = false;
   ['intro', 'connect', 'sandbox', 'pin'].forEach((name, index) => {
     const section = $(`#${name}-step`);
     section.hidden = index !== step;
@@ -211,15 +186,6 @@ $('#restart-welcome').addEventListener('click', (event) => {
   event.preventDefault();
   if (!verifying) location.replace(chrome.runtime.getURL('welcome.html'));
 });
-$('#reveal-key').addEventListener('click', () => {
-  const visible = $('#api-key').type === 'password';
-  $('#api-key').type = visible ? 'text' : 'password';
-  $('#reveal-key').setAttribute('aria-pressed', String(visible));
-  $('#reveal-key').setAttribute(
-    'aria-label',
-    visible ? 'Hide entered key' : 'Show entered key'
-  );
-});
 $('#replace-key').addEventListener('click', () => {
   changingKey = true;
   $('#google-consent').checked = false;
@@ -230,10 +196,7 @@ $('#replace-key').addEventListener('click', () => {
 });
 $('#cancel-key').addEventListener('click', () => {
   changingKey = false;
-  $('#api-key').value = '';
-  $('#api-key').type = 'password';
-  $('#reveal-key').setAttribute('aria-pressed', 'false');
-  $('#reveal-key').setAttribute('aria-label', 'Show entered key');
+  keyField.clear();
   $('#google-consent').checked = false;
   $('#api-key').removeAttribute('aria-invalid');
   message($('#key-status'), '');
@@ -253,17 +216,15 @@ $('#key-form').addEventListener('submit', async (event) => {
   updateConnect();
   message($('#key-status'), '');
   try {
-    await request('CONNECT_KEY', {
-      key: typedKey,
-      useStoredKey: !typedKey && state.keyConfigured && !changingKey,
-      consent: $('#google-consent').checked
+    await mutate(async () => {
+      await request('CONNECT_KEY', {
+        key: typedKey,
+        useStoredKey: !typedKey && state.keyConfigured && !changingKey,
+        consent: $('#google-consent').checked
+      });
+      keyField.clear();
+      changingKey = false;
     });
-    $('#api-key').value = '';
-    $('#api-key').type = 'password';
-    $('#reveal-key').setAttribute('aria-pressed', 'false');
-    $('#reveal-key').setAttribute('aria-label', 'Show entered key');
-    changingKey = false;
-    await snapshot();
     await showStep(2);
   } catch (error) {
     message($('#key-status'), error.message, true);
@@ -366,13 +327,15 @@ chrome.runtime.onMessage.addListener((payload, sender, respond) => {
   return false;
 });
 $('#finish-welcome').addEventListener('click', async () => {
+  $('#page-error').hidden = true;
   $('#finish-welcome').disabled = true;
   try {
     await request('FINISH_WELCOME');
-    location.replace(chrome.runtime.getURL('popup.html'));
+    await request('OPEN_TOOLBAR_POPUP');
   } catch (error) {
-    $('#finish-welcome').disabled = false;
     pageError(error);
+  } finally {
+    $('#finish-welcome').disabled = false;
   }
 });
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -399,11 +362,9 @@ document.addEventListener('visibilitychange', () => {
   clearKeys();
   if (document.hidden) {
     walkthroughs.suspend();
-    $('#api-key').type = 'password';
-    $('#reveal-key').setAttribute('aria-pressed', 'false');
-    $('#reveal-key').setAttribute('aria-label', 'Show entered key');
+    keyField.mask();
   } else
-    snapshot()
+    Promise.all([snapshot(), refreshMetadata()])
       .then(() => {
         walkthroughs.resume();
         if (step === 3) void updatePinStatus();
@@ -415,7 +376,7 @@ window.addEventListener('pagehide', () => {
   demo.destroy();
   clearKeys();
   clearTimeout(resizeTimer);
-  $('#api-key').value = '';
+  keyField.clear();
 });
 async function initialize() {
   decorateButtons();
@@ -425,11 +386,7 @@ async function initialize() {
     if (arrow) button.append(arrow);
   });
   await request('BEGIN_WELCOME');
-  await snapshot();
-  if (state.onboarding.completed && location.hash === '#dashboard') {
-    location.replace(chrome.runtime.getURL('popup.html'));
-    return;
-  }
+  await Promise.all([snapshot(), refreshMetadata()]);
   $('#boot').hidden = true;
   $('#welcome-main').setAttribute('aria-busy', 'false');
   await showStep(0, {

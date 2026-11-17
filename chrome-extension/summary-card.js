@@ -17,7 +17,8 @@
       'aria-hidden': 'true',
       focusable: 'false'
     };
-    for (const [name, value] of Object.entries(attributes)) svg.setAttribute(name, value);
+    for (const [name, value] of Object.entries(attributes))
+      svg.setAttribute(name, value);
     if (kind === 'close') {
       for (const className of ['timer-track', 'timer-progress']) {
         const circle = document.createElementNS(namespace, 'circle');
@@ -44,12 +45,14 @@
   function create({
     container = document.documentElement,
     placement = 'floating',
+    autoDismiss = true,
     onClose = () => {}
   } = {}) {
     const host = document.createElement('select-summary-card');
     const styles = {
       all: 'initial',
-      'font-family': '"Helvetica Neue", Helvetica, Arial, sans-serif',
+      'font-family':
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
       position: placement === 'floating' ? 'fixed' : 'absolute',
       bottom: '20px',
       right: '20px',
@@ -68,6 +71,8 @@
     let frame;
     let kind = 'summary';
     let destroyed = false;
+    let closing = false;
+    let exitAnimation;
 
     function clearClock() {
       clearTimeout(timer);
@@ -76,46 +81,84 @@
     function destroy() {
       clearClock();
       destroyed = true;
+      exitAnimation?.cancel();
       host.remove();
     }
-    function close(reason = 'manual') {
+    async function close(reason = 'manual') {
+      if (destroyed || closing) return;
+      closing = true;
+      clearClock();
+      const closedKind = kind;
+      host.dataset.closing = 'true';
+      onClose({ kind: closedKind, reason });
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        exitAnimation = host.animate(
+          [
+            { opacity: 1, transform: 'translateY(0)' },
+            { opacity: 0, transform: 'translateY(6px)' }
+          ],
+          { duration: 160, easing: 'ease-in', fill: 'forwards' }
+        );
+        try {
+          await exitAnimation.finished;
+        } catch {
+          return;
+        }
+      }
+      if (destroyed) return;
       destroy();
-      onClose({ kind, reason });
     }
     function update({ kind: nextKind = 'summary', text }) {
-      if (destroyed) return;
+      if (destroyed || closing) return;
       clearClock();
       kind = nextKind;
       shadow.querySelector('.card')?.remove();
       const card = document.createElement('section');
-      card.className = `card ${kind}`;
+      card.className = `card ${kind}${host.isConnected ? '' : ' is-entering'}`;
       card.setAttribute('role', kind === 'error' ? 'alert' : 'status');
-      card.setAttribute('aria-label', 'Select Summary');
+      card.setAttribute(
+        'aria-label',
+        kind === 'loading' ? 'Generating summary' : 'Select Summary'
+      );
+      card.setAttribute('aria-busy', String(kind === 'loading'));
       const header = document.createElement('div');
       header.className = 'header';
       const brand = document.createElement('span');
       brand.className = 'brand';
-      brand.textContent = 'Select Summary';
-      const duration = kind === 'summary' ? 25_000 : kind === 'error' ? 10_000 : 0;
+      const logo = document.createElement('img');
+      logo.src = chrome.runtime.getURL('icon/onboarding.svg');
+      logo.alt = '';
+      logo.width = logo.height = 22;
+      const brandLabel = document.createElement('span');
+      brandLabel.textContent = 'Select Summary';
+      brand.append(logo, brandLabel);
+      const duration = !autoDismiss
+        ? 0
+        : kind === 'summary'
+          ? 25_000
+          : kind === 'error'
+            ? 10_000
+            : 0;
       const dismiss = document.createElement('button');
       dismiss.type = 'button';
       dismiss.className = 'close';
       dismiss.setAttribute('aria-label', 'Close summary card');
-      dismiss.title = duration
-        ? `Close · automatically closes after ${duration / 1000} seconds`
-        : 'Close';
       dismiss.append(buttonIcon('close'));
       dismiss.addEventListener('click', () => close());
       header.append(brand, dismiss);
-      const paragraph = document.createElement('p');
-      paragraph.className = 'text';
-      paragraph.textContent = text;
-      card.append(header, paragraph);
+      card.append(header);
       if (kind === 'loading') {
-        const progress = document.createElement('div');
-        progress.className = 'progress';
-        progress.setAttribute('aria-hidden', 'true');
-        card.append(progress);
+        const skeleton = document.createElement('div');
+        skeleton.className = 'skeleton';
+        skeleton.setAttribute('aria-hidden', 'true');
+        for (let index = 0; index < 3; index++)
+          skeleton.append(document.createElement('span'));
+        card.append(skeleton);
+      } else {
+        const paragraph = document.createElement('p');
+        paragraph.className = 'text';
+        paragraph.textContent = text;
+        card.append(paragraph);
       }
       if (kind === 'summary') {
         const actions = document.createElement('div');

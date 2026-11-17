@@ -1,36 +1,22 @@
-import { activityStats, dashboardMessage, dayKey, shiftDay } from './core.js';
+import { createClient } from './shared/client.js';
+import { createKeyField } from './shared/key-field.js';
+import { createRefreshQueue } from './shared/refresh.js';
+import { activityStats, dashboardHeadline, dayKey, shiftDay } from './core.js';
 import { decorateButtons, icon } from './icons.js';
-import { shortcutKeys } from './shortcuts.js';
 
 const $ = (selector) => document.querySelector(selector);
 let state;
 let currentView = 'home';
 let currentNotice;
 let connectingUI = false;
-let platform = 'unknown';
-let shortcut = '';
-let refreshSerial = 0;
 let toastTimer;
-let lastTotal;
 let dayTimer;
 let renderedDay;
 
-async function request(type, fields = {}) {
-  let result;
-  try {
-    result = await chrome.runtime.sendMessage({ type, ...fields });
-  } catch {
-    throw new Error(
-      'The extension could not connect. Reload it from your browser’s extension settings and try again.'
-    );
-  }
-  if (!result?.ok)
-    throw new Error(
-      result?.error?.message ||
-        'Something did not load. Please reopen the extension and try again.'
-    );
-  return result;
-}
+const request = createClient();
+const { refresh, mutate } = createRefreshQueue(loadState);
+let activitySignature;
+let historySignature;
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -66,11 +52,13 @@ function on(selector, event, handler) {
 }
 
 function navigate(view, focus = true) {
+  hideActivityTooltip();
   currentView = ['home', 'history', 'settings'].includes(view) ? view : 'home';
   for (const id of ['home', 'history', 'settings'])
     $(`#${id}`).hidden = id !== currentView;
   document.querySelectorAll('[data-view]').forEach((button) => {
-    if (button.dataset.view === currentView) button.setAttribute('aria-current', 'page');
+    if (button.dataset.view === currentView)
+      button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
   if (focus) {
@@ -82,7 +70,7 @@ function navigate(view, focus = true) {
   if (currentView !== 'settings') {
     $('#replacement-form').replaceChildren();
     $('#replacement-form').hidden = true;
-    $('#replace-key').hidden = false;
+    $('#replace-key').disabled = false;
   }
 }
 
@@ -92,9 +80,49 @@ function timeLabel(seconds) {
   return `${(seconds / 3600).toFixed(1)}h`;
 }
 
+let tooltipCell;
+function hideActivityTooltip() {
+  $('#activity-tooltip').hidden = true;
+  tooltipCell?.removeAttribute('aria-describedby');
+  tooltipCell = undefined;
+}
+function showActivityTooltip(cell, date, count) {
+  hideActivityTooltip();
+  tooltipCell = cell;
+  const tooltip = $('#activity-tooltip');
+  $('#activity-tooltip-count').textContent =
+    `${count} ${count === 1 ? 'summary' : 'summaries'}`;
+  $('#activity-tooltip-date').textContent = date.toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  cell.setAttribute('aria-describedby', 'activity-tooltip');
+  tooltip.hidden = false;
+  const cellBounds = cell.getBoundingClientRect();
+  const bounds = tooltip.getBoundingClientRect();
+  const left = Math.max(
+    8,
+    Math.min(
+      innerWidth - bounds.width - 8,
+      cellBounds.left + (cellBounds.width - bounds.width) / 2
+    )
+  );
+  const above = cellBounds.top - bounds.height - 9;
+  const top =
+    above >= 8
+      ? above
+      : Math.min(innerHeight - bounds.height - 8, cellBounds.bottom + 9);
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${Math.max(8, top)}px`;
+}
+window.addEventListener('scroll', hideActivityTooltip, true);
+window.addEventListener('resize', hideActivityTooltip);
+
 function renderHeatmap() {
   if (!state) return;
-  const weeks = window.innerWidth >= 800 ? 52 : 13;
+  hideActivityTooltip();
+  const weeks = 12;
   $('#activity-range').textContent = `Last ${weeks} weeks`;
   const now = new Date();
   const today = dayKey(now);
@@ -109,23 +137,35 @@ function renderHeatmap() {
     const cell = element('button');
     cell.dataset.level = String(Math.min(4, count));
     cell.setAttribute('aria-label', label);
-    cell.title = label;
     cell.tabIndex = day === today ? 0 : -1;
 
     if (day > today) {
       cell.dataset.future = '';
       cell.disabled = true;
     }
-    cell.addEventListener('focus', () => {
-      $('#day-detail').textContent = label;
+    const showTooltip = () => {
+      if (!cell.disabled) showActivityTooltip(cell, date, count);
+    };
+    cell.addEventListener('pointerenter', showTooltip);
+    cell.addEventListener('pointerleave', () => {
+      if (document.activeElement !== cell) hideActivityTooltip();
     });
-    cell.addEventListener('click', () => {
-      $('#day-detail').textContent = label;
+    cell.addEventListener('focus', showTooltip);
+    cell.addEventListener('blur', () => {
+      if (!cell.matches(':hover')) hideActivityTooltip();
     });
+    cell.addEventListener('click', showTooltip);
     cell.addEventListener('keydown', (event) => {
-      const offset = { ArrowRight: 7, ArrowLeft: -7, ArrowDown: 1, ArrowUp: -1 }[
-        event.key
-      ];
+      if (event.key === 'Escape') {
+        hideActivityTooltip();
+        return;
+      }
+      const offset = {
+        ArrowRight: 7,
+        ArrowLeft: -7,
+        ArrowDown: 1,
+        ArrowUp: -1
+      }[event.key];
       if (!offset) return;
       event.preventDefault();
       const target = $('#heatmap').children[index + offset];
@@ -173,62 +213,51 @@ function renderSummary(item) {
 }
 
 function renderDashboard() {
-  renderedDay = dayKey();
-  const stats = activityStats(state.activity);
-  const keys = shortcutKeys(shortcut, platform);
-  $('#settings-shortcut').textContent =
-    `Open: ${platform === 'mac' ? 'Option' : 'Alt'} + G. Summarize: ${keys.length ? keys.join(' + ') : 'Unassigned'}.`;
-  $('#stat-total').textContent = stats.total.toLocaleString();
-  $('#stat-today').textContent = `${stats.today} today`;
-  $('#local-rewards').hidden = !stats.total && !state.milestones.firstSummary;
-  $('#stat-xp').textContent = `${state.xp.toLocaleString()} XP`;
-  $('#first-milestone').hidden = !state.milestones.firstSummary;
-  $('#stat-time').textContent = timeLabel(stats.secondsSaved);
-  $('#stat-streak').replaceChildren(
-    document.createTextNode(String(stats.currentStreak)),
-    element('span', '', stats.currentStreak === 1 ? ' day' : ' days')
-  );
-  $('#stat-best-streak').textContent =
-    `Best: ${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`;
-  $('#stat-best').textContent = String(stats.bestDay);
-  const message = dashboardMessage(stats);
-  $('#home-title').textContent = message.title;
-  $('#home-message').textContent = message.detail;
-  $('#activity-message').textContent = `${stats.total} total`;
-  if (
-    lastTotal !== undefined &&
-    stats.total > lastTotal &&
-    [1, 5, 10, 25, 50, 100].includes(stats.total)
-  ) {
-    toast(`${stats.total} summaries`);
-    $('.activity-panel').classList.remove('celebrate');
-    requestAnimationFrame(() => $('.activity-panel').classList.add('celebrate'));
-  }
-  lastTotal = stats.total;
-  renderHeatmap();
-  $('#history-count').textContent = String(state.history.length);
-  $('#clear-history').disabled = state.history.length === 0;
-  const list = $('#summary-list');
-  if (!state.history.length) {
-    const empty = element('div', 'empty');
-    empty.append(
-      element('h2', '', 'No summaries yet.'),
-      element(
-        'p',
-        '',
-        'Highlight text on a webpage, right-click, and choose “Summarize selection.” Your summaries will appear here.'
-      )
+  const nextActivity = JSON.stringify(state.activity);
+  if (activitySignature !== nextActivity || renderedDay !== dayKey()) {
+    activitySignature = nextActivity;
+    renderedDay = dayKey();
+    const stats = activityStats(state.activity);
+    $('#stat-total').textContent = stats.total.toLocaleString();
+    $('#stat-today').textContent = `${stats.today} today`;
+    $('#stat-time').textContent = timeLabel(stats.secondsSaved);
+    $('#stat-streak').replaceChildren(
+      document.createTextNode(String(stats.currentStreak)),
+      element('span', '', stats.currentStreak === 1 ? ' day' : ' days')
     );
-    list.replaceChildren(empty);
-  } else list.replaceChildren(...state.history.map(renderSummary));
-  $('#latest-area').hidden = !state.history.length;
-  $('#latest-summary').replaceChildren(...state.history.slice(0, 1).map(renderSummary));
-  $('#key-status').textContent = `Key ending in ${state.keySuffix}`;
+    $('#stat-best-streak').textContent =
+      `Best: ${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`;
+    $('#stat-best').textContent = String(stats.bestDay);
+    $('#home-title').textContent = dashboardHeadline(stats);
+    renderHeatmap();
+  }
+  const nextHistory = JSON.stringify(state.history);
+  if (historySignature !== nextHistory) {
+    historySignature = nextHistory;
+    const list = $('#summary-list');
+    if (!state.history.length) {
+      const empty = element('div', 'empty');
+      empty.append(
+        element('h2', '', 'No summaries yet.'),
+        element(
+          'p',
+          '',
+          'Highlight text on a webpage, right-click, and choose “Summarize selection.” Your summaries will appear here.'
+        )
+      );
+      list.replaceChildren(empty);
+    } else list.replaceChildren(...state.history.map(renderSummary));
+  }
+  document.querySelectorAll('#history-limit input').forEach((input) => {
+    input.checked = Number(input.value) === state.historyLimit;
+  });
+  $('#settings-clear-history').disabled = state.history.length === 0;
+  $('#key-status').textContent = `••••••••••••••••••••••••${state.keySuffix}`;
 }
 
 // Templates contain only bundled HTML. Keys and generated text are assigned
 // through DOM properties, never interpolated into markup.
-function createKeyForm(container, replacement = false) {
+function createReplacementKeyForm(container) {
   container.replaceChildren($('#key-form-template').content.cloneNode(true));
   const form = container.querySelector('form');
   const input = container.querySelector('#new-key');
@@ -242,76 +271,59 @@ function createKeyForm(container, replacement = false) {
   }
   input.addEventListener('input', updateSubmit);
   consent.addEventListener('change', updateSubmit);
-  reveal.addEventListener('click', () => {
-    const visible = input.type === 'password';
-    input.type = visible ? 'text' : 'password';
-    reveal.setAttribute('aria-label', visible ? 'Hide entered key' : 'Show entered key');
-    reveal.setAttribute('aria-pressed', String(visible));
+  createKeyField(input, reveal);
+  const cancel = element('button', 'secondary', 'Cancel');
+  cancel.type = 'button';
+  cancel.addEventListener('click', () => {
+    container.replaceChildren();
+    container.hidden = true;
+    $('#replace-key').disabled = false;
+    $('#replace-key').focus();
   });
-
-  let cancel;
-  if (replacement) {
-    cancel = element('button', 'secondary', 'Cancel');
-    cancel.addEventListener('click', () => {
-      container.replaceChildren();
-      container.hidden = true;
-      $('#replace-key').hidden = false;
-      $('#replace-key').focus();
-    });
-    container.append(cancel);
-  }
+  form.querySelector('.key-form-actions').prepend(cancel);
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submit.disabled || connectingUI) return;
-    connectingUI = true;
-    input.readOnly = true;
-    consent.disabled = true;
-    if (cancel) cancel.disabled = true;
-    updateSubmit();
-    status.setAttribute('role', 'status');
-    status.textContent = 'Checking Gemini…';
-    try {
-      await request('CONNECT_KEY', { key: input.value.trim(), consent: consent.checked });
-      input.value = '';
-      container.replaceChildren();
-      if (replacement) {
-        container.hidden = true;
-        $('#replace-key').hidden = false;
-        toast('AI Connected');
-      }
-      connectingUI = false;
-      await refresh();
-    } catch (error) {
-      status.textContent = error.message;
-      status.setAttribute('role', 'alert');
-      input.focus();
-    } finally {
-      connectingUI = false;
-      input.readOnly = false;
-      consent.disabled = false;
-      if (cancel) cancel.disabled = false;
+    await mutate(async () => {
+      connectingUI = true;
+      input.readOnly = true;
+      consent.disabled = true;
+      cancel.disabled = true;
       updateSubmit();
-    }
+      status.setAttribute('role', 'status');
+      status.textContent = 'Checking Gemini…';
+      try {
+        await request('CONNECT_KEY', {
+          key: input.value.trim(),
+          consent: consent.checked
+        });
+        input.value = '';
+        container.replaceChildren();
+        container.hidden = true;
+        $('#replace-key').disabled = false;
+        toast('AI Connected');
+      } catch (error) {
+        status.textContent = error.message;
+        status.setAttribute('role', 'alert');
+        input.focus();
+      } finally {
+        connectingUI = false;
+        input.readOnly = false;
+        consent.disabled = false;
+        cancel.disabled = false;
+        updateSubmit();
+      }
+    }).catch(showProblem);
   });
   decorateButtons(container);
   updateSubmit();
 }
 
-async function refresh() {
-  const serial = ++refreshSerial;
+async function loadState() {
   const response = await request('GET_STATE');
-  if (serial !== refreshSerial || connectingUI) return;
   state = response.state;
-  platform = response.platform;
-  shortcut = response.shortcut;
-  currentNotice = response.notice;
   $('#boot').hidden = true;
-  $('#notice').hidden = !currentNotice || currentNotice.level === 'success';
-  if (currentNotice) {
-    $('#notice').dataset.level = currentNotice.level;
-    $('#notice-title').textContent = currentNotice.title;
-    $('#notice-message').textContent = currentNotice.message;
-  }
+  renderNotice(response.notice);
 
   if (!state.keyConfigured || !state.onboarding.completed) {
     if (isToolbarPopup) {
@@ -325,30 +337,42 @@ async function refresh() {
   navigate(currentView, false);
 }
 
+function renderNotice(notice) {
+  currentNotice = notice;
+  $('#notice').hidden = !notice || notice.level === 'success';
+  if (notice) {
+    $('#notice').dataset.level = notice.level;
+    $('#notice-title').textContent = notice.title;
+    $('#notice-message').textContent = notice.message;
+  }
+}
+
+let pendingConfirmation;
+$('#confirm-dialog form').addEventListener('submit', (event) => {
+  const action = pendingConfirmation;
+  pendingConfirmation = undefined;
+  if (event.submitter?.value === 'confirm' && action)
+    void Promise.resolve()
+      .then(() => mutate(action))
+      .catch(showProblem);
+});
+$('#confirm-dialog').addEventListener('cancel', () => {
+  pendingConfirmation = undefined;
+});
+
 function confirmAction(title, description, label, action) {
   const dialog = $('#confirm-dialog');
   $('#confirm-title').textContent = title;
   $('#confirm-description').textContent = description;
   $('#confirm-action').textContent = label;
   dialog.returnValue = '';
-  dialog.addEventListener(
-    'close',
-    async () => {
-      if (dialog.returnValue === 'confirm') {
-        try {
-          await action();
-          await refresh();
-        } catch (error) {
-          showProblem(error);
-        }
-      }
-    },
-    { once: true }
-  );
+  pendingConfirmation = action;
   dialog.showModal();
 }
 
-const isToolbarPopup = chrome.extension.getViews({ type: 'popup' }).includes(window);
+const isToolbarPopup = chrome.extension
+  .getViews({ type: 'popup' })
+  .includes(window);
 decorateButtons();
 document.body.classList.toggle('window-mode', !isToolbarPopup);
 document
@@ -360,34 +384,50 @@ on('.wordmark', 'click', (event) => {
   event.preventDefault();
   if (state?.keyConfigured && state.onboarding.completed) navigate('home');
 });
-on('#open-window', 'click', async () => {
-  await chrome.windows.create({
-    url: chrome.runtime.getURL('popup.html'),
-    type: 'popup',
-    width: 920,
-    height: 820
-  });
-  if (chrome.extension.getViews({ type: 'popup' }).includes(window)) window.close();
-});
 on('#dismiss-notice', 'click', async () => {
   $('#notice').hidden = true;
   if (currentNotice) await request('DISMISS_NOTICE', { id: currentNotice.id });
 });
-on('#view-history', 'click', () => navigate('history'));
 on('#replace-key', 'click', () => {
-  $('#replace-key').hidden = true;
+  $('#replace-key').disabled = true;
   $('#replacement-form').hidden = false;
-  createKeyForm($('#replacement-form'), true);
+  createReplacementKeyForm($('#replacement-form'));
   $('#new-key').focus();
 });
-on('#clear-history', 'click', () =>
+function clearSavedHistory() {
   confirmAction(
     'Clear your history?',
     'Your saved summaries will be removed. Your activity, streaks, and connected key will stay.',
     'Clear history',
     () => request('CLEAR_HISTORY')
-  )
-);
+  );
+}
+on('#settings-clear-history', 'click', clearSavedHistory);
+on('#history-limit', 'change', async (event) => {
+  const limit = Number(event.target.value);
+  const options = $('#history-limit');
+  options.querySelectorAll('input').forEach((input) => {
+    input.checked = Number(input.value) === state.historyLimit;
+  });
+  if (limit === state.historyLimit) return;
+  const save = async () => {
+    options.disabled = true;
+    try {
+      await request('SET_HISTORY_LIMIT', { limit });
+      toast('History limit updated.');
+    } finally {
+      options.disabled = false;
+    }
+  };
+  if (state.history.length > limit) {
+    confirmAction(
+      'Keep fewer summaries?',
+      `Keep the newest ${limit} summaries and remove ${state.history.length - limit} older entries? Your activity and streaks will stay.`,
+      'Update limit',
+      save
+    );
+  } else await mutate(save);
+});
 on('#remove-key', 'click', () =>
   confirmAction(
     'Disconnect this key?',
@@ -404,23 +444,14 @@ on('#reset-all', 'click', () =>
     'Your key, summaries, and activity will be permanently removed from this browser. This does not revoke your key at Google.',
     'Reset everything',
     async () => {
-      lastTotal = undefined;
       await request('RESET_ALL');
     }
   )
 );
-on('#open-welcome', 'click', () => request('OPEN_WELCOME'));
-on('#shortcut-settings', 'click', () =>
-  chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })
-);
 chrome.storage.onChanged.addListener((changes, area) => {
-  if ((area === 'local' && changes.appState) || (area === 'session' && changes.notice))
-    refresh().catch(showProblem);
-});
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(renderHeatmap, 100);
+  if (area === 'session' && changes.notice)
+    renderNotice(changes.notice.newValue);
+  if (area === 'local' && changes.appState) refresh().catch(showProblem);
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
@@ -429,17 +460,21 @@ document.addEventListener('visibilitychange', () => {
       .forEach((input) => {
         input.type = 'password';
       });
-    document.querySelectorAll('[aria-label="Hide entered key"]').forEach((button) => {
-      button.setAttribute('aria-label', 'Show entered key');
-      button.setAttribute('aria-pressed', 'false');
-    });
+    document
+      .querySelectorAll('[aria-label="Hide entered key"]')
+      .forEach((button) => {
+        button.setAttribute('aria-label', 'Show entered key');
+        button.setAttribute('aria-pressed', 'false');
+      });
   } else refresh().catch(showProblem);
 });
 window.addEventListener('pagehide', () => {
   clearInterval(dayTimer);
-  document.querySelectorAll('input[type=password],input[type=text]').forEach((input) => {
-    input.value = '';
-  });
+  document
+    .querySelectorAll('input[type=password],input[type=text]')
+    .forEach((input) => {
+      input.value = '';
+    });
 });
 dayTimer = setInterval(() => {
   if (

@@ -1,38 +1,59 @@
 # Select Summary
 
-A Chrome extension that turns selected text into a concise Gemini summary. Bring your own API key; your key, history and activity stay on device.
+Select Summary is a Chrome extension that summarizes text you select on a webpage using your own Gemini API key. It shows the summary on the page and keeps saved summaries and activity on your device.
 
-## Install
+## Tech Stack
 
-1. Download or clone this repository.
-2. Open `chrome://extensions` and enable **Developer mode**.
-3. Choose **Load unpacked** and select **`chrome-extension/`**.
-4. Follow the welcome guide to connect your Gemini key and try a summary.
+- JavaScript, HTML and CSS
+- Chrome Extension APIs (Manifest V3)
+- Chrome local and session storage
+- Google Gemini REST API
 
-Chrome 127 or newer is required. No build, dependency installation or development server is needed.
+## How to Run It
 
-## Use
+You can install Select Summary from the [Chrome Web Store](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd) by choosing **Add to Chrome**.
 
-Select text on a webpage, right-click, and choose **Summarize selection**. The default shortcut is **Alt + Shift + S** (Option + Shift + S on Mac). **Alt + G** opens the extension. Change shortcuts at `chrome://extensions/shortcuts`.
+*The store version may be older than this repository's version (3.0.0). Check the version under the listing's Details before installing; follow the local steps below if you need this source version.*
 
-The popup contains activity, saved history and settings. Choose a history limit of **5, 10, 15 or 20** summaries in Settings; the default is 10. Replaced or cleared summaries cannot be restored. History pruning preserves aggregate activity. Protected browser pages and some viewers may block selection access or summary cards.
+You need Chrome 127 or newer and a Gemini API key with access to the configured model, `gemini-3.5-flash-lite`.
 
-## Data and API usage
+```sh
+git clone https://github.com/DevPatel5061/select-summary.git
+cd select-summary
+```
 
-Explicit summaries send the selected text directly to Google's Gemini API using your key. Connecting a key makes one small validation request. Page URLs/titles and local activity are not sent by the extension. There are no extension accounts, analytics, developer servers or automatic retries.
+There are no dependencies to install, build commands or local servers to start.
 
-Keys and summaries are stored locally and are **not encrypted by the extension**. Summaries can contain sensitive source information. Google controls API processing and pricing: free-tier content may be used for improvement/human review, and billing-enabled projects can incur charges. Avoid sensitive text; review [Google's terms](https://ai.google.dev/gemini-api/terms) and [pricing](https://ai.google.dev/gemini-api/docs/pricing).
+1. Open `chrome://extensions` and turn on **Developer mode**.
+2. Click **Load unpacked** and select the **`chrome-extension`** folder.
+3. In the welcome guide, connect your Gemini API key and summarize some practice text to complete setup.
+4. On a webpage, select text, right-click and choose **Summarize selection**. You can also press **Alt + Shift + S** (Option + Shift + S on Mac).
+5. Click the extension icon to view activity, saved history and settings. History can keep 5, 10, 15 or 20 summaries; the default is 10.
 
-Settings lets you replace/disconnect the key, clear history or reset local data. Disconnecting does not revoke the key at Google; revoke it in AI Studio.
+Change keyboard shortcuts at `chrome://extensions/shortcuts`. After editing the code, reload the extension at `chrome://extensions` and refresh the webpage.
 
-## Source
+## Project Structure
 
-`chrome-extension/` contains the complete runtime. Its manifest defines entry points and required assets; `shared/` contains reusable UI behavior. Both files in `icon/` are used by the extension.
+- `chrome-extension/manifest.json` defines permissions, keyboard commands and entry points.
+- `background.js`, `gemini.js`, `core.js` and `storage.js` handle requests, validation and saved data inside `chrome-extension/`.
+- `popup.*`, `interface.html` and `bootstrap.js` provide the dashboard; `welcome.*`, `walkthroughs.js` and the demo files provide onboarding.
+- `content.js`, `summary-card.js` and `summary.css` display summaries on webpages and in onboarding.
+- `chrome-extension/shared/` contains reusable behavior; `chrome-extension/icon/` contains the required logos.
 
-The full development snapshot—including tests, tooling, documentation and design references—is preserved on the [`main-backup`](https://github.com/DevPatel5061/select-summary/tree/main-backup) branch. `main` contains the lean runtime distribution. Reload the extension and refresh existing webpages after source changes.
+## How It Works
 
-Upgraded storage uses schema 6. Older source revisions may not understand it; use a separate browser profile when testing older versions.
+```mermaid
+flowchart LR
+    Selection[Selected webpage text] --> Worker[Extension service worker]
+    UI[Popup and welcome guide] <--> Worker
+    Worker <-->|HTTPS request and response| Gemini[Google Gemini API]
+    Worker --> Card[Summary card on the page]
+    Worker <--> Storage[Local browser storage]
+    Storage --> UI
+```
 
-## License
+The extension has no backend server of its own. Its service worker receives selection requests, checks the input and sends the selected text directly to Gemini through `gemini.js`. It saves successful results before passing them to the summary card. The popup reads saved history and activity through the worker.
 
-[GNU GPL v3](LICENSE). Original control SVGs and CSS skyline/hash-table artwork are dedicated under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+The API key and history stay in local extension storage, which is not encrypted by the extension. Selected text is sent to Google, and summaries may contain information from that text. Connecting a key sends one small validation request; each summary sends one generation request without automatic retries.
+
+Protected browser pages can block selection access or summary cards. If a result is saved but cannot appear on the page, it remains available in History.

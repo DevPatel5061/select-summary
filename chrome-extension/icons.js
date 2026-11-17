@@ -2,8 +2,10 @@
 // under CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 // Icons belong inside controls only; they are never decorative title artwork.
 const paths = {
-  minimize: ['M5 12h14'],
-  maximize: ['M5 5h14v14H5z'],
+  puzzle: [
+    'M8 3h3a2.5 2.5 0 1 1 5 0h3v6a2.5 2.5 0 1 1 0 5v6h-6a2.5 2.5 0 1 0-5 0H3v-6a2.5 2.5 0 1 0 0-5V3h5Z'
+  ],
+  pin: ['M9 3h6l-1 6 4 4v2H6v-2l4-4-1-6Z', 'M12 15v6'],
   back: ['M20 12H4m6-6-6 6 6 6'],
   reload: ['M20 7v5h-5', 'M19 12a7 7 0 1 0-2 5M20 12l-3-5'],
   expand: ['M14 4h6v6M20 4l-8 8', 'M10 4H4v16h16v-6'],
@@ -11,7 +13,10 @@ const paths = {
   copy: ['M8 8h12v12H8z', 'M4 16V4h12'],
   arrow: ['M4 12h16m-6-6 6 6-6 6'],
   key: ['M14 9a5 5 0 1 0-4 5l4 4h3v3h4v-4l-7-7', 'M6 8h.01'],
-  eye: ['M2 12c5-8 15-8 20 0-5 8-15 8-20 0Z', 'M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0'],
+  eye: [
+    'M2 12c5-8 15-8 20 0-5 8-15 8-20 0Z',
+    'M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0'
+  ],
   check: ['M4 12l5 5L20 6']
 };
 

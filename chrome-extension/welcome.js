@@ -5,13 +5,13 @@ import { createWalkthroughs } from './walkthroughs.js';
 
 const $ = (selector) => document.querySelector(selector);
 const guideTab = await chrome.tabs.getCurrent();
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let state;
-let step = 1;
+const welcomeRunId = crypto.randomUUID();
+let practiceComplete = false;
+let step = 0;
 let verifying = false;
 let changingKey = false;
 let snapshotSerial = 0;
-let confettiTimer;
 let keys = [];
 let shortcutSignature = '';
 let keyTimer;
@@ -20,23 +20,33 @@ const downCodes = new Set();
 const walkthroughs = createWalkthroughs(pageError);
 const demo = createArticleDemo(async (fields) => {
   const result = await request('SUMMARIZE_DEMO', fields);
-  await snapshot();
+  practiceComplete = true;
+  updatePractice();
   return result;
 });
 async function request(type, fields = {}) {
   let response;
   try {
-    response = await chrome.runtime.sendMessage({ type, ...fields });
+    response = await chrome.runtime.sendMessage({
+      type,
+      ...fields,
+      welcomeRunId
+    });
   } catch {
-    throw new Error('The extension disconnected. Reload this page and try again.');
+    throw new Error(
+      'The extension disconnected. Reload this page and try again.'
+    );
   }
   if (!response?.ok && response?.error?.message === 'Unknown request.')
     throw new Error(
       'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
     );
   if (!response?.ok)
-    throw new Error(
-      response?.error?.message || 'Could not complete that action. Try again.'
+    throw Object.assign(
+      new Error(
+        response?.error?.message || 'Could not complete that action. Try again.'
+      ),
+      { code: response?.error?.code }
     );
   return response;
 }
@@ -53,13 +63,19 @@ function updateConnect() {
   const connected = state?.keyValidated && !changingKey;
   $('#connect-title').textContent = connected
     ? 'Gemini connected.'
-    : 'Add your Gemini key.';
+    : 'Connect your AI.';
+  $('#connect-description').textContent = connected
+    ? 'Your connection is ready. Continue to try your first summary.'
+    : 'Select Summary uses Google Gemini to summarize your text. Your API key connects the two.';
   $('#verified-key').hidden = !connected;
   $('#key-form').hidden = connected;
   $('#continue-connect').hidden = !connected;
   $('#connected-actions').hidden = !connected;
-  $('#cancel-key').hidden = false;
-  $('#cancel-key').disabled = verifying || !changingKey || !state?.keyValidated;
+  $('.get-key-row').hidden = connected;
+  $('#key-actions').hidden = connected;
+  $('#cancel-key').hidden = !changingKey || !state?.keyValidated;
+  $('#cancel-key').disabled = verifying;
+  $('#back-intro').disabled = verifying;
   $('#saved-key-label').textContent = `Key ending in ${state?.keySuffix || ''}`;
   const useStored = Boolean(state?.keyConfigured && !changingKey);
   $('#stored-key-hint').hidden = !useStored;
@@ -71,8 +87,23 @@ function updateConnect() {
     !$('#google-consent').checked ||
     (!$('#api-key').value.trim() && !useStored);
   const button = $('#verify-key');
-  const text = [...button.childNodes].find((node) => node.nodeType === Node.TEXT_NODE);
-  if (text) text.textContent = verifying ? 'Verifying…' : 'Verify & continue';
+  const text = [...button.childNodes].find(
+    (node) => node.nodeType === Node.TEXT_NODE
+  );
+  if (text) text.textContent = verifying ? 'Connecting…' : 'Connect Gemini';
+}
+
+function updatePractice() {
+  const complete = practiceComplete;
+  const button = $('#continue-sandbox');
+  button.disabled = !state?.keyValidated || !complete;
+  button.classList.toggle('primary', complete);
+  button.classList.toggle('secondary', !complete);
+  const label = [...button.childNodes].find(
+    (node) => node.nodeType === Node.TEXT_NODE
+  );
+  if (label) label.textContent = 'Continue';
+  $('#practice-instruction').hidden = false;
 }
 
 function clearKeys() {
@@ -94,15 +125,20 @@ function renderKeys(shortcut, platform) {
   for (const key of keys) {
     const cap = document.createElement('kbd');
     cap.dataset.key = key;
-    cap.textContent = platform === 'mac' && symbols[key] ? `${symbols[key]} ${key}` : key;
+    cap.textContent =
+      platform === 'mac' && symbols[key] ? `${symbols[key]} ${key}` : key;
     root.append(cap);
   }
-  if (!keys.length) root.textContent = 'Set a shortcut at chrome://extensions/shortcuts';
+  if (!keys.length)
+    root.textContent = 'Set a shortcut at chrome://extensions/shortcuts';
+  $('#ready-shortcut-keys').replaceChildren(
+    ...[...root.childNodes].map((node) => node.cloneNode(true))
+  );
 }
 async function snapshot() {
   const serial = ++snapshotSerial;
   const result = await request('GET_STATE');
-  if (result.interfaceVersion !== 1)
+  if (result.interfaceVersion !== 3)
     throw new Error(
       'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
     );
@@ -110,13 +146,13 @@ async function snapshot() {
   state = result.state;
   renderKeys(result.shortcut, result.platform);
   if (!verifying) updateConnect();
-  $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete;
+  updatePractice();
 }
 async function showStep(next, { persist = true, focus = true } = {}) {
   if (!state) return;
   if (next >= 2 && !state.keyValidated) next = 1;
-  if (next === 3 && !state.onboarding.sandboxComplete) next = 2;
-  if (persist) {
+  if (next === 3 && !practiceComplete) next = 2;
+  if (persist && next > 0) {
     await request('SET_WELCOME_STEP', { step: next });
     state.onboarding.step = next;
   }
@@ -124,59 +160,57 @@ async function showStep(next, { persist = true, focus = true } = {}) {
   demo.setEnabled(step === 2);
   clearKeys();
   $('#page-error').hidden = true;
-  $('#step-label').textContent = `Step ${step} of 3`;
-  ['connect', 'sandbox', 'pin'].forEach((name, index) => {
-    $(`#${name}-step`).hidden = index + 1 !== step;
+  $('#setup-progress').hidden = step === 0;
+  ['intro', 'connect', 'sandbox', 'pin'].forEach((name, index) => {
+    const section = $(`#${name}-step`);
+    section.hidden = index !== step;
+    section.classList.toggle('is-entering', index === step && focus);
   });
   document.querySelectorAll('.step-tab').forEach((button) => {
     const number = Number(button.dataset.step);
     button.disabled =
-      number === 2
-        ? !state.keyValidated
-        : number === 3
-          ? !state.onboarding.sandboxComplete
-          : false;
+      (number >= 2 && !state.keyValidated) ||
+      (number === 3 && !practiceComplete);
     button.dataset.complete = String(number < step);
     if (number === step) button.setAttribute('aria-current', 'step');
     else button.removeAttribute('aria-current');
   });
   walkthroughs.show(step);
+  history.replaceState(null, '', step === 0 ? '#welcome' : '#setup');
   if (step === 1) updateConnect();
   if (step === 3) {
     await updatePinStatus();
   }
   if (focus) {
-    $(`#${['connect', 'sandbox', 'pin'][step - 1]}-title`).focus({ preventScroll: true });
+    $(`#${['intro', 'connect', 'sandbox', 'pin'][step]}-title`).focus({
+      preventScroll: true
+    });
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
-}
-function celebrate() {
-  clearTimeout(confettiTimer);
-  const layer = $('#confetti');
-  layer.replaceChildren();
-  if (reducedMotion.matches) return;
-  for (let index = 0; index < 18; index++) {
-    const piece = document.createElement('i');
-    piece.style.setProperty('--piece', index);
-    layer.append(piece);
-  }
-  layer.hidden = false;
-  confettiTimer = setTimeout(() => {
-    layer.hidden = true;
-    layer.replaceChildren();
-  }, 1300);
 }
 async function updatePinStatus() {
   try {
     const settings = await chrome.action.getUserSettings();
-    $('#pin-status').textContent = settings.isOnToolbar ? 'Already pinned.' : '';
+    $('#pin-status').textContent = settings.isOnToolbar
+      ? 'Already pinned. You’re good to go.'
+      : '';
   } catch {
     /* Compatible browsers may not expose pin status. */
   }
 }
 
-$('#api-key').addEventListener('input', updateConnect);
+$('#api-key').addEventListener('input', () => {
+  message($('#key-status'), '');
+  $('#api-key').removeAttribute('aria-invalid');
+  updateConnect();
+});
 $('#google-consent').addEventListener('change', updateConnect);
+$('#get-started').addEventListener('click', () => showStep(1).catch(pageError));
+$('#back-intro').addEventListener('click', () => showStep(0).catch(pageError));
+$('#restart-welcome').addEventListener('click', (event) => {
+  event.preventDefault();
+  if (!verifying) location.replace(chrome.runtime.getURL('welcome.html'));
+});
 $('#reveal-key').addEventListener('click', () => {
   const visible = $('#api-key').type === 'password';
   $('#api-key').type = visible ? 'text' : 'password';
@@ -189,6 +223,8 @@ $('#reveal-key').addEventListener('click', () => {
 $('#replace-key').addEventListener('click', () => {
   changingKey = true;
   $('#google-consent').checked = false;
+  $('#api-key').removeAttribute('aria-invalid');
+  message($('#key-status'), '');
   updateConnect();
   $('#api-key').focus();
 });
@@ -199,6 +235,7 @@ $('#cancel-key').addEventListener('click', () => {
   $('#reveal-key').setAttribute('aria-pressed', 'false');
   $('#reveal-key').setAttribute('aria-label', 'Show entered key');
   $('#google-consent').checked = false;
+  $('#api-key').removeAttribute('aria-invalid');
   message($('#key-status'), '');
   updateConnect();
   $('#continue-connect').focus();
@@ -227,10 +264,12 @@ $('#key-form').addEventListener('submit', async (event) => {
     $('#reveal-key').setAttribute('aria-label', 'Show entered key');
     changingKey = false;
     await snapshot();
-    celebrate();
     await showStep(2);
   } catch (error) {
     message($('#key-status'), error.message, true);
+    if (['KEY', 'AUTH'].includes(error.code))
+      $('#api-key').setAttribute('aria-invalid', 'true');
+    $('#api-key').focus();
   } finally {
     verifying = false;
     $('#api-key').readOnly = false;
@@ -239,7 +278,9 @@ $('#key-form').addEventListener('submit', async (event) => {
   }
 });
 
-$('#continue-connect').addEventListener('click', () => showStep(2).catch(pageError));
+$('#continue-connect').addEventListener('click', () =>
+  showStep(2).catch(pageError)
+);
 $('#back-connect').addEventListener('click', async () => {
   try {
     await showStep(1);
@@ -247,8 +288,12 @@ $('#back-connect').addEventListener('click', async () => {
     pageError(error);
   }
 });
-$('#continue-sandbox').addEventListener('click', () => showStep(3).catch(pageError));
-$('#back-sandbox').addEventListener('click', () => showStep(2).catch(pageError));
+$('#continue-sandbox').addEventListener('click', () =>
+  showStep(3).catch(pageError)
+);
+$('#back-sandbox').addEventListener('click', () =>
+  showStep(2).catch(pageError)
+);
 document
   .querySelectorAll('[data-step]')
   .forEach((button) =>
@@ -256,9 +301,7 @@ document
       showStep(Number(button.dataset.step)).catch(pageError)
     )
   );
-document.addEventListener('keydown', (event) => {
-  if (step !== 2) return;
-  downCodes.add(event.code);
+function renderPressedKeys(event) {
   const modifiers = {
     Alt: event.altKey,
     Option: event.altKey,
@@ -282,6 +325,11 @@ document.addEventListener('keydown', (event) => {
           )
     );
   });
+}
+document.addEventListener('keydown', (event) => {
+  if (step !== 2) return;
+  downCodes.add(event.code);
+  renderPressedKeys(event);
   if (matchesShortcut(event, keys) && !event.repeat) {
     event.preventDefault();
     void demo.summarize('shortcut');
@@ -289,25 +337,9 @@ document.addEventListener('keydown', (event) => {
 });
 document.addEventListener('keyup', (event) => {
   downCodes.delete(event.code);
-  if (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) clearKeys();
-  else
-    document.querySelectorAll('#shortcut-keys kbd').forEach((cap) => {
-      const modifiers = {
-        Alt: event.altKey,
-        Option: event.altKey,
-        Shift: event.shiftKey,
-        Ctrl: event.ctrlKey,
-        Command: event.metaKey,
-        Meta: event.metaKey
-      };
-      const key = cap.dataset.key;
-      cap.classList.toggle(
-        'is-pressed',
-        Object.hasOwn(modifiers, key)
-          ? modifiers[key]
-          : downCodes.has(key.length === 1 ? `Key${key.toUpperCase()}` : key)
-      );
-    });
+  if (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey)
+    clearKeys();
+  else renderPressedKeys(event);
 });
 chrome.runtime.onMessage.addListener((payload, sender, respond) => {
   if (
@@ -337,8 +369,7 @@ $('#finish-welcome').addEventListener('click', async () => {
   $('#finish-welcome').disabled = true;
   try {
     await request('FINISH_WELCOME');
-    const tab = await chrome.tabs.getCurrent();
-    await chrome.tabs.remove(tab.id);
+    location.replace(chrome.runtime.getURL('popup.html'));
   } catch (error) {
     $('#finish-welcome').disabled = false;
     pageError(error);
@@ -348,32 +379,33 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (!state || area !== 'local' || !changes.appState) return;
   snapshot()
     .then(async () => {
-      if (!state.keyConfigured) demo.clear();
-      if (!state.keyValidated && step !== 1) await showStep(1, { persist: false });
-      else if (!state.onboarding.sandboxComplete && step === 3)
-        await showStep(2, { persist: false });
+      if (!state.keyConfigured) {
+        practiceComplete = false;
+        demo.clear();
+      }
+      if (!state.keyValidated && step > 1)
+        await showStep(1, { persist: false });
     })
     .catch(pageError);
 });
 window.addEventListener('blur', clearKeys);
 window.addEventListener('resize', () => {
-  walkthroughs.stop();
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    if (!document.hidden) walkthroughs.show(step);
+    if (!document.hidden) walkthroughs.resize();
   }, 150);
 });
 document.addEventListener('visibilitychange', () => {
   clearKeys();
   if (document.hidden) {
-    walkthroughs.stop();
+    walkthroughs.suspend();
     $('#api-key').type = 'password';
     $('#reveal-key').setAttribute('aria-pressed', 'false');
     $('#reveal-key').setAttribute('aria-label', 'Show entered key');
   } else
     snapshot()
       .then(() => {
-        walkthroughs.show(step);
+        walkthroughs.resume();
         if (step === 3) void updatePinStatus();
       })
       .catch(pageError);
@@ -382,12 +414,17 @@ window.addEventListener('pagehide', () => {
   walkthroughs.stop();
   demo.destroy();
   clearKeys();
-  clearTimeout(confettiTimer);
   clearTimeout(resizeTimer);
   $('#api-key').value = '';
 });
 async function initialize() {
   decorateButtons();
+  // Forward actions read naturally from label to destination; Back keeps its arrow first.
+  document.querySelectorAll('button[data-icon="arrow"]').forEach((button) => {
+    const arrow = button.querySelector('svg');
+    if (arrow) button.append(arrow);
+  });
+  await request('BEGIN_WELCOME');
   await snapshot();
   if (state.onboarding.completed && location.hash === '#dashboard') {
     location.replace(chrome.runtime.getURL('popup.html'));
@@ -395,7 +432,7 @@ async function initialize() {
   }
   $('#boot').hidden = true;
   $('#welcome-main').setAttribute('aria-busy', 'false');
-  await showStep(state.onboarding.completed ? 1 : state.onboarding.step, {
+  await showStep(0, {
     persist: false,
     focus: false
   });

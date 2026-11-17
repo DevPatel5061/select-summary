@@ -5,6 +5,7 @@ import {
   isAppSender,
   isAppUrl,
   publicState,
+  normalizeSelection,
   validateSelection,
   wordCount
 } from './core.js';
@@ -34,7 +35,8 @@ async function notice(level, title, message) {
   });
   await chrome.action.setBadgeBackgroundColor({ color: '#0868e8' });
   await chrome.action.setBadgeText({
-    text: level === 'error' ? '!' : level === 'info' ? '1' : activeCount ? '…' : ''
+    text:
+      level === 'error' ? '!' : level === 'info' ? '1' : activeCount ? '…' : ''
   });
 }
 
@@ -91,7 +93,10 @@ async function handleSelection(selection, tab) {
     const source = validateSelection(selection);
     const state = await store.read();
     if (!state.key)
-      throw new AppError('NO_KEY', 'Open Select Summary and connect your Gemini key.');
+      throw new AppError(
+        'NO_KEY',
+        'Open Select Summary and connect your Gemini key.'
+      );
     await notice('loading', 'Summarizing', 'Waiting for Gemini.');
     loadingCard = showCard(tab.id, { kind: 'loading', text: 'Summarizing…' });
     const text = await summarize(source, state.key);
@@ -119,7 +124,9 @@ async function handleSelection(selection, tab) {
     await loadingCard;
     const problem = safeError(error);
     await showCard(tab?.id, { kind: 'error', text: problem.message });
-    await notice('error', 'Unable to summarize', problem.message).catch(() => {});
+    await notice('error', 'Unable to summarize', problem.message).catch(
+      () => {}
+    );
   } finally {
     activeTabs.delete(tab?.id);
     activeCount--;
@@ -191,13 +198,48 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 // The demo uses the same provider and local accounting as normal summaries.
 // A request ID prevents duplicate responses from awarding activity twice.
-async function summarizeDemo(message) {
+let welcomeQueue = Promise.resolve();
+function updateWelcomeSession(key, transform) {
+  const operation = welcomeQueue.then(async () => {
+    const current = (await chrome.storage.session.get(key))[key];
+    const next = transform(current);
+    if (next) await chrome.storage.session.set({ [key]: next });
+  });
+  welcomeQueue = operation.catch(() => {});
+  return operation;
+}
+async function welcomeRun(message, sender, requireComplete = false) {
+  if (
+    !sender.tab ||
+    sender.url?.split(/[?#]/)[0] !== chrome.runtime.getURL('welcome.html')
+  )
+    throw new AppError('MESSAGE', 'Open the welcome guide to continue.');
+  const key = `welcomeRun:${sender.tab.id}`;
+  const run = (await chrome.storage.session.get(key))[key];
+  if (
+    !run ||
+    run.id !== message.welcomeRunId ||
+    (requireComplete && !run.complete)
+  )
+    throw new AppError(
+      'SANDBOX',
+      'Summarize some practice text in this walkthrough first.'
+    );
+  return { key, run };
+}
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.session.remove(`welcomeRun:${tabId}`).catch(() => {});
+});
+async function summarizeDemo(message, sender) {
+  const session = await welcomeRun(message, sender);
   const article = Object.hasOwn(DEMO_ARTICLES, message.articleId)
     ? DEMO_ARTICLES[message.articleId]
     : null;
   const source = validateSelection(message.selection);
-  const normalize = (text) => text.replace(/\s+/g, ' ').trim();
-  if (!article || !normalize(article.text).includes(normalize(source)))
+  if (
+    !article ||
+    !normalizeSelection(article.text).includes(normalizeSelection(source))
+  )
     throw new AppError('SELECTION', 'Highlight paragraph text in the demo.');
   if (
     typeof message.requestId !== 'string' ||
@@ -224,16 +266,40 @@ async function summarizeDemo(message) {
         Date.now(),
         message.requestId
       );
-      return { ...next, onboarding: { ...next.onboarding, sandboxComplete: true } };
+      return {
+        ...next,
+        onboarding: { ...next.onboarding, sandboxComplete: true }
+      };
     });
+    // A response from an older walkthrough must never unlock a restarted one.
+    await updateWelcomeSession(session.key, (currentRun) =>
+      currentRun?.id === session.run.id
+        ? { ...currentRun, complete: true }
+        : null
+    );
     return { summary };
   } finally {
     activeDemos.delete(state.credentialRevision);
   }
 }
 
-async function appRequest(message) {
+async function appRequest(message, sender) {
   switch (message.type) {
+    case 'BEGIN_WELCOME': {
+      if (
+        !sender.tab ||
+        sender.url?.split(/[?#]/)[0] !==
+          chrome.runtime.getURL('welcome.html') ||
+        typeof message.welcomeRunId !== 'string' ||
+        !/^[a-zA-Z0-9-]{16,64}$/.test(message.welcomeRunId)
+      )
+        throw new AppError('MESSAGE', 'Invalid walkthrough session.');
+      await updateWelcomeSession(`welcomeRun:${sender.tab.id}`, () => ({
+        id: message.welcomeRunId,
+        complete: false
+      }));
+      return {};
+    }
     case 'GET_STATE': {
       const [stored, session, platform, commands] = await Promise.all([
         store.read(),
@@ -242,12 +308,12 @@ async function appRequest(message) {
         chrome.commands.getAll()
       ]);
       return {
-        interfaceVersion: 1,
+        interfaceVersion: 3,
         state: publicState(stored),
         platform: platform.os,
         shortcut:
-          commands.find((command) => command.name === 'summarize-selection')?.shortcut ||
-          '',
+          commands.find((command) => command.name === 'summarize-selection')
+            ?.shortcut || '',
         notice:
           session.notice?.level === 'loading' && !activeCount
             ? null
@@ -258,14 +324,16 @@ async function appRequest(message) {
       await openWelcome();
       return {};
     case 'SET_WELCOME_STEP':
+      await welcomeRun(message, sender, message.step === 3);
       if (![1, 2, 3].includes(message.step))
         throw new AppError('MESSAGE', 'Invalid welcome step.');
       await store.update((state) => {
         if (message.step >= 2 && !state.keyValidated)
           throw new AppError('NO_KEY', 'Verify your Gemini key first.');
-        if (message.step === 3 && !state.onboarding.sandboxComplete)
-          throw new AppError('SANDBOX', 'Generate a live summary first.');
-        return { ...state, onboarding: { ...state.onboarding, step: message.step } };
+        return {
+          ...state,
+          onboarding: { ...state.onboarding, step: message.step }
+        };
       });
       return {};
     case 'CONNECT_KEY': {
@@ -291,11 +359,17 @@ async function appRequest(message) {
             'Accept the Google API data notice before connecting.'
           );
         if (epoch !== credentialEpoch)
-          throw new AppError('CANCELLED', 'Settings changed. Please connect again.');
+          throw new AppError(
+            'CANCELLED',
+            'Settings changed. Please connect again.'
+          );
         await validateApiKey(key.trim());
         await store.update((state) => {
           if (epoch !== credentialEpoch)
-            throw new AppError('CANCELLED', 'Settings changed. Please connect again.');
+            throw new AppError(
+              'CANCELLED',
+              'Settings changed. Please connect again.'
+            );
           return {
             ...state,
             key: key.trim(),
@@ -310,11 +384,12 @@ async function appRequest(message) {
       }
     }
     case 'SUMMARIZE_DEMO':
-      return summarizeDemo(message);
+      return summarizeDemo(message, sender);
     case 'FINISH_WELCOME':
+      await welcomeRun(message, sender, true);
       await store.update((state) => {
-        if (!state.keyValidated || !state.onboarding.sandboxComplete)
-          throw new AppError('SANDBOX', 'Generate a live summary first.');
+        if (!state.keyValidated)
+          throw new AppError('NO_KEY', 'Verify your Gemini key first.');
         return {
           ...state,
           onboarding: { ...state.onboarding, step: 3, completed: true }
@@ -331,7 +406,12 @@ async function appRequest(message) {
         key: null,
         keyValidated: false,
         credentialRevision: state.credentialRevision + 1,
-        onboarding: { version: 1, step: 1, completed: false, sandboxComplete: false }
+        onboarding: {
+          version: 1,
+          step: 1,
+          completed: false,
+          sandboxComplete: false
+        }
       }));
       return {};
     case 'RESET_ALL':
@@ -345,7 +425,8 @@ async function appRequest(message) {
       return {};
     case 'DISMISS_NOTICE': {
       const { notice: current } = await chrome.storage.session.get('notice');
-      if (current?.id === message.id) await chrome.storage.session.remove('notice');
+      if (current?.id === message.id)
+        await chrome.storage.session.remove('notice');
       await chrome.action.setBadgeText({ text: '' });
       return {};
     }
@@ -364,12 +445,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     typeof message.type !== 'string'
   )
     return false;
-  appRequest(message).then(
+  appRequest(message, sender).then(
     (result) => respond({ ok: true, ...result }),
     (error) => respond({ ok: false, error: safeError(error) })
   );
   return true;
 });
-
-// Release any temporary IDs left by the former separate-window walkthrough.
-chrome.storage.session.remove(['practiceSession', 'practiceStatus']).catch(() => {});

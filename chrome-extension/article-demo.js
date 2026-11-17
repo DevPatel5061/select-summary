@@ -1,10 +1,11 @@
+import { normalizeSelection } from './core.js';
 import { DEMO_ARTICLES } from './demo-articles.js';
 import './summary-card.js';
 
 // A local reading surface. Chrome owns the context menu: no contextmenu handler,
 // custom menu buttons, intercepted right-click, or automatic provider requests.
 export function createArticleDemo(onSummarize) {
-  let articleId = 'hash';
+  let articleId = 'toronto';
   let enabled = false;
   let busy = false;
   let revision = 0;
@@ -62,16 +63,20 @@ export function createArticleDemo(onSummarize) {
     $('.demo-scroll').scrollTop = 0;
     restoreButton();
   }
+  const articleOrder = [...document.querySelectorAll('[data-article]')].map(
+    (tab) => tab.dataset.article
+  );
   document.querySelectorAll('[data-article]').forEach((tab) => {
     tab.addEventListener('click', () => switchArticle(tab.dataset.article));
     tab.addEventListener('keydown', (event) => {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+        return;
       event.preventDefault();
       const id =
         event.key === 'Home'
-          ? 'hash'
+          ? articleOrder[0]
           : event.key === 'End'
-            ? 'toronto'
+            ? articleOrder.at(-1)
             : articleId === 'hash'
               ? 'toronto'
               : 'hash';
@@ -101,6 +106,13 @@ export function createArticleDemo(onSummarize) {
       }
     });
   });
+  function clearSelectionError() {
+    if (enabled && selectedText()) {
+      $('#sandbox-status').textContent = '';
+      $('#sandbox-status').hidden = true;
+    }
+  }
+  document.addEventListener('selectionchange', clearSelectionError);
   return {
     setEnabled(value) {
       enabled = value;
@@ -112,12 +124,14 @@ export function createArticleDemo(onSummarize) {
     async summarize(method, providedSource) {
       if (!enabled || busy) return;
       const source = method === 'context' ? providedSource : selectedText();
-      const normalize = (text) => text.replace(/\s+/g, ' ').trim();
       if (
         !source ||
-        !normalize(DEMO_ARTICLES[articleId].text).includes(normalize(source))
+        !normalizeSelection(DEMO_ARTICLES[articleId].text).includes(
+          normalizeSelection(source)
+        )
       ) {
-        $('#sandbox-status').textContent = 'Highlight paragraph text in the demo first.';
+        $('#sandbox-status').textContent =
+          'Highlight paragraph text in the demo first.';
         $('#sandbox-status').hidden = false;
         return;
       }
@@ -153,6 +167,9 @@ export function createArticleDemo(onSummarize) {
       clearCard();
       restoreButton();
     },
-    destroy: clearCard
+    destroy() {
+      clearCard();
+      document.removeEventListener('selectionchange', clearSelectionError);
+    }
   };
 }

@@ -1,291 +1,524 @@
-// Bundled illustrations only. These controls never operate a Google account
-// or the actual Chrome toolbar; the cursor targets measured button positions.
+// These are bundled illustrations. Animated clicks never touch a real form,
+// clipboard, Google account, browser toolbar, or provider request.
 export function createWalkthroughs(onError) {
   const $ = (selector) => document.querySelector(selector);
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const pageError = onError;
-  let step = 0;
-  let guideRun;
-  let pinRun;
-  function abortError() {
-    return new DOMException('Animation stopped', 'AbortError');
-  }
+  const tracks = new Map();
+  let active;
 
-  // Every animation has one cancellable sequence. No separate CSS loops race the
-  // cursor against buttons, text selection, or a resized layout.
-  function wait(milliseconds, signal) {
-    return new Promise((resolve, reject) => {
-      if (signal.aborted) return reject(abortError());
-      const timer = setTimeout(() => {
-        signal.removeEventListener('abort', stop);
-        resolve();
-      }, milliseconds);
-      function stop() {
-        clearTimeout(timer);
-        reject(abortError());
+  function createTrack(
+    name,
+    { root, cursor, caption, scenes, paint, finished }
+  ) {
+    const surface = $(root);
+    const pointer = $(cursor);
+    const label = $(caption);
+    const animations = new Set();
+    const delays = new Set();
+    let controller;
+    let index = 0;
+    let paused = false;
+    let ended = false;
+    let visited = false;
+    let automaticallyPaused = false;
+
+    function update() {
+      if (name === 'studio') {
+        document.querySelectorAll('[data-guide-scene]').forEach((button) => {
+          const position = Number(button.dataset.guideScene);
+          button.dataset.complete = String(position < index || ended);
+          button.querySelector('.scene-fill').style.transform =
+            position < index || ended ? 'scaleX(1)' : 'scaleX(0)';
+          button.setAttribute(
+            'aria-pressed',
+            String(Number(button.dataset.guideScene) === index)
+          );
+        });
       }
+    }
+    function abort() {
+      controller?.abort();
+      controller = undefined;
+      surface
+        .querySelectorAll('.is-hovered, .is-pressed')
+        .forEach((node) => node.classList.remove('is-hovered', 'is-pressed'));
+      pointer.classList.remove('is-clicking');
+      pointer.hidden = true;
+    }
+    // Pauses retain both timer durations and Web Animation positions. Coming
+    // back from AI Studio continues the guide instead of restarting it.
+    function wait(milliseconds, signal) {
+      return new Promise((resolve, reject) => {
+        if (signal.aborted)
+          return reject(new DOMException('Stopped', 'AbortError'));
+        let remaining = milliseconds;
+        let began;
+        let timer;
+        const delay = {
+          pause() {
+            if (timer === undefined) return;
+            clearTimeout(timer);
+            remaining = Math.max(0, remaining - (performance.now() - began));
+            timer = undefined;
+          },
+          resume() {
+            if (timer !== undefined || signal.aborted) return;
+            began = performance.now();
+            timer = setTimeout(() => {
+              timer = undefined;
+              cleanup();
+              resolve();
+            }, remaining);
+          }
+        };
+        function cleanup() {
+          clearTimeout(timer);
+          delays.delete(delay);
+          signal.removeEventListener('abort', stop);
+        }
+        function stop() {
+          cleanup();
+          reject(new DOMException('Stopped', 'AbortError'));
+        }
+        delays.add(delay);
+        signal.addEventListener('abort', stop, { once: true });
+        if (!paused) delay.resume();
+      });
+    }
+    async function animate(node, frames, duration, signal) {
+      if (signal.aborted) throw new DOMException('Stopped', 'AbortError');
+      const animation = node.animate(frames, {
+        duration,
+        easing: 'cubic-bezier(.4,0,.2,1)',
+        fill: 'forwards'
+      });
+      animations.add(animation);
+      if (paused) animation.pause();
+      const stop = () => animation.cancel();
       signal.addEventListener('abort', stop, { once: true });
-    });
-  }
-  async function animate(node, frames, duration, signal) {
-    if (signal.aborted) throw abortError();
-    const animation = node.animate(frames, {
-      duration,
-      easing: 'ease-in-out',
-      fill: 'forwards'
-    });
-    const stop = () => animation.cancel();
-    signal.addEventListener('abort', stop, { once: true });
-    try {
-      await animation.finished;
-    } catch {
-      throw abortError();
-    } finally {
-      signal.removeEventListener('abort', stop);
-      // Commit positions explicitly so old Animation objects cannot override a
-      // later replay. The controller owns the resulting inline style.
-      if (!signal.aborted) {
-        const final = frames.at(-1);
-        for (const [property, value] of Object.entries(final))
-          node.style[property] = value;
+      try {
+        await animation.finished;
+        if (!signal.aborted) Object.assign(node.style, frames.at(-1));
+      } catch {
+        throw new DOMException('Stopped', 'AbortError');
+      } finally {
+        animations.delete(animation);
+        signal.removeEventListener('abort', stop);
+        animation.cancel();
       }
-      animation.cancel();
     }
-  }
-  async function moveTo(cursor, root, target, signal, duration = 420) {
-    const rectangle = target.getBoundingClientRect();
-    const origin = root.getBoundingClientRect();
-    await movePoint(
-      cursor,
-      rectangle.left - origin.left + rectangle.width / 2,
-      rectangle.top - origin.top + rectangle.height / 2,
-      signal,
-      duration
-    );
-  }
-  async function movePoint(cursor, x, y, signal, duration = 60) {
-    const transform = `translate(${x}px, ${y}px)`;
-    cursor.hidden = false;
-    await animate(
-      cursor,
-      [{ transform: cursor.style.transform || transform }, { transform }],
-      duration,
-      signal
-    );
-  }
-  async function clickIllustration(cursor, target, signal) {
-    target.classList.add('is-hovered');
-    await wait(160, signal);
-    target.classList.add('is-pressed');
-    cursor.classList.add('is-clicking');
-    await wait(130, signal);
-    // Only illustrated controls have these handlers. This never clicks a live
-    // provider link, submits a real key form, or writes to the clipboard.
-    target.click();
-    target.classList.remove('is-hovered', 'is-pressed');
-    cursor.classList.remove('is-clicking');
-  }
-
-  function stopGuide() {
-    guideRun?.abort();
-    guideRun = null;
-    $('#studio-cursor').hidden = true;
-    document
-      .querySelectorAll('.studio-guide .is-hovered,.studio-guide .is-pressed')
-      .forEach((node) => node.classList.remove('is-hovered', 'is-pressed'));
-  }
-  function showGuide(scene) {
-    $('#create-overlay').hidden = scene !== 'create';
-    $('#project-overlay').hidden = scene !== 'project';
-    $('#copy-overlay').hidden = scene !== 'copy';
-    $('#paste-scene').hidden = scene !== 'paste';
-    $('#studio-address').textContent =
-      scene === 'paste'
-        ? 'Select Summary · Connect Gemini'
-        : 'aistudio.google.com/api-keys';
-    const captions = {
-      keys: 'Open API Keys. Copy an existing key, or choose Create API key.',
-      create: 'Name your key and choose a project.',
-      project: 'Create a project, name it, and select it for your key.',
-      copy: 'Copy your new key. Keep project billing disabled for the free tier.',
-      paste: 'Paste your key here, accept the data notice, then press Verify & Continue.'
+    async function point(x, y, signal, duration = 500) {
+      const transform = `translate(${x}px, ${y}px)`;
+      pointer.hidden = false;
+      await animate(
+        pointer,
+        [{ transform: pointer.style.transform || transform }, { transform }],
+        duration,
+        signal
+      );
+    }
+    async function move(target, signal, duration = 500) {
+      const node = typeof target === 'string' ? $(target) : target;
+      const bounds = node.getBoundingClientRect();
+      const origin = surface.getBoundingClientRect();
+      await point(
+        bounds.left - origin.left + bounds.width / 2,
+        bounds.top - origin.top + bounds.height / 2,
+        signal,
+        duration
+      );
+    }
+    async function press(target, action, signal) {
+      const node = typeof target === 'string' ? $(target) : target;
+      node.classList.add('is-hovered');
+      try {
+        await wait(200, signal);
+        node.classList.add('is-pressed');
+        pointer.classList.add('is-clicking');
+        await wait(140, signal);
+        action();
+        await wait(100, signal);
+      } finally {
+        node.classList.remove('is-hovered', 'is-pressed');
+        pointer.classList.remove('is-clicking');
+      }
+    }
+    async function type(target, text, signal) {
+      const node = $(target);
+      node.textContent = '';
+      for (const character of text) {
+        node.textContent += character;
+        await wait(55, signal);
+      }
+    }
+    function pause(automatic = false) {
+      if (!controller || paused) return;
+      paused = true;
+      automaticallyPaused = automatic;
+      animations.forEach((animation) => animation.pause());
+      delays.forEach((delay) => delay.pause());
+      update();
+    }
+    function resume() {
+      automaticallyPaused = false;
+      if (reducedMotion.matches) return;
+      if (!controller) return start(ended ? 0 : index);
+      paused = false;
+      animations.forEach((animation) => animation.play());
+      delays.forEach((delay) => delay.resume());
+      update();
+    }
+    function start(from = 0) {
+      abort();
+      visited = true;
+      ended = false;
+      paused = false;
+      automaticallyPaused = false;
+      index = from;
+      if (reducedMotion.matches) {
+        index = scenes.length - 1;
+        paint(index);
+        label.textContent = finished;
+        ended = true;
+        update();
+        return;
+      }
+      controller = new AbortController();
+      const signal = controller.signal;
+      pointer.style.transform = 'translate(24px, 86px)';
+      const api = {
+        wait: (ms) => wait(ms, signal),
+        move: (target, duration) => move(target, signal, duration),
+        point: (x, y, duration) => point(x, y, signal, duration),
+        press: (target, action = () => {}) => press(target, action, signal),
+        type: (target, text) => type(target, text, signal),
+        animate: (target, frames, duration) =>
+          animate($(target), frames, duration, signal)
+      };
+      void (async () => {
+        try {
+          while (!signal.aborted) {
+            for (let scene = from; scene < scenes.length; scene++) {
+              if (signal.aborted) return;
+              index = scene;
+              paint(index);
+              label.textContent = scenes[scene].caption;
+              update();
+              const meter =
+                name === 'studio'
+                  ? $(`[data-guide-scene="${scene}"] .scene-fill`)
+                  : null;
+              if (meter) {
+                await Promise.all([
+                  scenes[scene].run(api),
+                  animate(
+                    meter,
+                    [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+                    [2840, 5690, 8000, 3440][scene],
+                    signal
+                  )
+                ]);
+              } else await scenes[scene].run(api);
+            }
+            if (signal.aborted) return;
+            ended = true;
+            pointer.hidden = true;
+            label.textContent = finished;
+            update();
+            await wait(1500, signal);
+            from = 0;
+            ended = false;
+            pointer.style.transform = 'translate(24px, 86px)';
+          }
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            abort();
+            onError(error);
+          }
+        }
+      })();
+    }
+    const track = {
+      show() {
+        start();
+        update();
+      },
+      suspend() {
+        pause(true);
+      },
+      resume() {
+        if (automaticallyPaused) resume();
+      },
+      resize() {
+        if (!visited || ended || reducedMotion.matches) return;
+        const keepPaused = paused;
+        const keepAutomatic = automaticallyPaused;
+        start(index);
+        if (keepPaused) {
+          pause(keepAutomatic);
+        }
+      },
+      playScene(scene) {
+        start(scene);
+      },
+      staticScene(scene) {
+        abort();
+        visited = true;
+        index = scene;
+        ended = false;
+        paused = true;
+        automaticallyPaused = false;
+        paint(index);
+        label.textContent = scenes[index].caption;
+        update();
+      },
+      motionChanged() {
+        if (!visited) return;
+        abort();
+        index = scenes.length - 1;
+        paint(index);
+        label.textContent = finished;
+        ended = true;
+        update();
+      },
+      stop: abort
     };
-    $('#guide-caption').textContent = captions[scene];
+    tracks.set(name, track);
+    return track;
   }
-  async function playGuide(scene = 'keys') {
-    stopGuide();
+
+  createTrack('intro', {
+    root: '#intro-browser',
+    cursor: '#intro-cursor',
+    caption: '#intro-caption',
+    paint(index) {
+      $('#intro-selection').style.backgroundSize = '';
+      $('#intro-selection').classList.toggle('is-selected', index > 0);
+      $('#intro-menu').hidden = index !== 1;
+      $('#intro-result').hidden = index < 2;
+      $('#intro-loading').hidden = true;
+      $('#intro-result-footer').hidden = false;
+      $('#intro-result-text').textContent =
+        'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and a culture shaped by immigration.';
+    },
+    scenes: [
+      {
+        caption: 'Highlight the part you want to understand.',
+        async run(a) {
+          await a.wait(850);
+          const lines = [...$('#intro-selection').getClientRects()];
+          const first = lines[0];
+          const last = lines.at(-1);
+          const root = $('#intro-browser').getBoundingClientRect();
+          await a.point(first.left - root.left, first.top - root.top + 8);
+          await Promise.all([
+            a.animate(
+              '#intro-selection',
+              [{ backgroundSize: '0% 100%' }, { backgroundSize: '100% 100%' }],
+              800
+            ),
+            a.point(last.right - root.left - 4, last.bottom - root.top - 4, 800)
+          ]);
+          $('#intro-selection').classList.add('is-selected');
+          await a.wait(1000);
+          await a.press('#intro-selection');
+        }
+      },
+      {
+        caption: 'Right-click, then choose Summarize selection.',
+        async run(a) {
+          await a.wait(800);
+          await a.move('#intro-summarize');
+          await a.press('#intro-summarize');
+          await a.wait(450);
+        }
+      },
+      {
+        caption: 'A concise summary appears without leaving the page.',
+        async run(a) {
+          $('#intro-menu').hidden = true;
+          $('#intro-result-text').textContent = 'Summarizing…';
+          $('#intro-result-footer').hidden = true;
+          $('#intro-loading').hidden = false;
+          await a.wait(1000);
+          $('#intro-result-text').textContent =
+            'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and a culture shaped by immigration.';
+          $('#intro-result-footer').hidden = false;
+          $('#intro-loading').hidden = true;
+          await a.wait(1400);
+        }
+      }
+    ],
+    finished: 'Read the summary without leaving the page.'
+  });
+
+  function studioScene(index) {
+    $('#create-overlay').hidden = index !== 1;
+    $('#project-overlay').hidden = index !== 2;
+    $('#copy-overlay').hidden = index !== 3;
+    $('#mock-options').hidden = true;
+    $('#mock-project-option').hidden = true;
+    $('#mock-new-project').hidden = false;
+    $('#mock-name').textContent = 'Select Summary';
+    $('#mock-project-name').textContent = 'Select Summary';
+    $('#mock-project-label').textContent = 'Create project';
     $('#mock-copy').lastChild.textContent = 'Copy';
-    projectList.hidden = true;
-    showGuide(scene);
-    if (reducedMotion.matches || step !== 1) return;
-    guideRun = new AbortController();
-    const { signal } = guideRun;
-    const cursor = $('#studio-cursor');
-    cursor.style.transform = 'translate(30px, 70px)';
-    try {
-      while (!signal.aborted && step === 1) {
-        scene = 'keys';
-        projectList.hidden = true;
-        projectOption.hidden = true;
-        $('#mock-project-label').textContent = 'Create project';
-        $('#mock-project-name').textContent = '';
-        $('#mock-copy').lastChild.textContent = 'Copy';
-        showGuide(scene);
-        if (scene === 'keys') {
-          await wait(500, signal);
-          await moveTo(cursor, $('#studio-guide'), $('#mock-create'), signal, 650);
-          await clickIllustration(cursor, $('#mock-create'), signal);
-          scene = 'create';
+  }
+  function projectOptions(existing) {
+    $('#mock-options').hidden = false;
+    $('#mock-options').style.top =
+      `${$('#mock-project').offsetTop + $('#mock-project').offsetHeight + 5}px`;
+    $('#mock-project-option').hidden = !existing;
+    $('#mock-new-project').hidden = existing;
+  }
+  const studio = createTrack('studio', {
+    root: '#studio-guide',
+    cursor: '#studio-cursor',
+    caption: '#guide-caption',
+    paint: studioScene,
+    scenes: [
+      {
+        caption:
+          'Open API Keys in Google AI Studio, then choose Create API key.',
+        async run(a) {
+          await a.wait(1300);
+          await a.move('#mock-create', 650);
+          await a.press('#mock-create');
+          await a.wait(450);
         }
-        if (scene === 'create') {
+      },
+      {
+        caption:
+          'Name your key, then choose a project. Already have one? You can use it.',
+        async run(a) {
           $('#mock-name').textContent = '';
-          await moveTo(cursor, $('#studio-guide'), $('#mock-name'), signal);
-          for (const character of 'Select Summary') {
-            $('#mock-name').textContent += character;
-            await wait(45, signal);
-          }
-          await moveTo(cursor, $('#studio-guide'), $('#mock-project'), signal);
-          await clickIllustration(cursor, $('#mock-project'), signal);
-          await wait(250, signal);
-          await moveTo(cursor, $('#studio-guide'), $('#mock-new-project'), signal, 260);
-          await clickIllustration(cursor, $('#mock-new-project'), signal);
-          await moveTo(cursor, $('#studio-guide'), $('#mock-project-name'), signal);
-          for (const character of 'Select Summary') {
-            $('#mock-project-name').textContent += character;
-            await wait(65, signal);
-          }
-          await moveTo(cursor, $('#studio-guide'), $('#mock-project-create'), signal);
-          await clickIllustration(cursor, $('#mock-project-create'), signal);
-          await wait(350, signal);
-          await moveTo(cursor, $('#studio-guide'), $('#mock-project-option'), signal);
-          await clickIllustration(cursor, $('#mock-project-option'), signal);
-          await moveTo(cursor, $('#studio-guide'), $('#mock-create-confirm'), signal);
-          await clickIllustration(cursor, $('#mock-create-confirm'), signal);
-          await wait(350, signal);
-          await moveTo(cursor, $('#studio-guide'), $('#mock-copy'), signal);
-          await clickIllustration(cursor, $('#mock-copy'), signal);
-          await wait(650, signal);
-          showGuide('paste');
+          await a.wait(700);
+          await a.move('#mock-name');
+          await a.type('#mock-name', 'Select Summary');
+          await a.wait(650);
+          await a.move('#mock-project');
+          await a.press('#mock-project', () => projectOptions(false));
+          await a.wait(700);
+          await a.move('#mock-new-project');
+          await a.press('#mock-new-project');
         }
-        $('#mock-paste-value').textContent = '';
-        await moveTo(cursor, $('#studio-guide'), $('#mock-paste'), signal);
-        cursor.classList.add('is-clicking');
-        await wait(160, signal);
-        cursor.classList.remove('is-clicking');
-        for (let index = 0; index < 18; index++) {
-          $('#mock-paste-value').textContent += '•';
-          await wait(45, signal);
+      },
+      {
+        caption:
+          'For a new project, give it a name and select it for your key.',
+        async run(a) {
+          $('#mock-project-name').textContent = '';
+          await a.wait(850);
+          await a.move('#mock-project-name');
+          await a.type('#mock-project-name', 'Select Summary');
+          await a.wait(650);
+          await a.move('#mock-project-create');
+          await a.press('#mock-project-create', () => {
+            studioScene(1);
+            projectOptions(true);
+          });
+          await a.wait(750);
+          await a.move('#mock-project-option');
+          await a.press('#mock-project-option', () => {
+            $('#mock-options').hidden = true;
+            $('#mock-project-label').textContent = 'Select Summary';
+          });
+          await a.wait(700);
+          await a.move('#mock-create-confirm');
+          await a.press('#mock-create-confirm');
         }
-        await wait(1000, signal);
-        cursor.hidden = true;
-        await wait(700, signal);
+      },
+      {
+        caption:
+          'Copy the new key. Keep project billing disabled to use an eligible free tier.',
+        async run(a) {
+          await a.wait(1000);
+          await a.move('#mock-copy');
+          await a.press('#mock-copy', () => {
+            $('#mock-copy').lastChild.textContent = 'Copied';
+          });
+          await a.wait(1500);
+        }
       }
-    } catch (error) {
-      if (error.name !== 'AbortError') pageError(error);
-    }
-  }
-
-  // Illustrated AI Studio controls only change the illustration.
-  $('#mock-create').addEventListener('click', () => showGuide('create'));
-  const projectList = document.createElement('div');
-  projectList.className = 'mock-options';
-  projectList.hidden = true;
-  const projectOption = document.createElement('button');
-  projectOption.id = 'mock-project-option';
-  projectOption.type = 'button';
-  projectOption.tabIndex = -1;
-  projectOption.textContent = 'Select Summary';
-  projectOption.hidden = true;
-  const newProject = document.createElement('button');
-  newProject.id = 'mock-new-project';
-  newProject.tabIndex = -1;
-  newProject.textContent = 'Create project';
-  projectList.append(projectOption, newProject);
-  $('#mock-project').parentElement.append(projectList);
-  $('#mock-project').addEventListener('click', () => {
-    projectList.hidden = !projectList.hidden;
-    projectList.style.top = `${$('#mock-project').offsetTop + $('#mock-project').offsetHeight + 3}px`;
+    ],
+    finished:
+      'Return here, paste your key in the real form, and choose Connect Gemini.'
   });
-  projectOption.addEventListener('click', () => {
-    projectList.hidden = true;
-    $('#mock-project-label').textContent = 'Select Summary';
-  });
-  newProject.addEventListener('click', () => {
-    projectList.hidden = true;
-    showGuide('project');
-  });
-  $('#mock-project-create').addEventListener('click', () => {
-    showGuide('create');
-    projectOption.hidden = false;
-    projectList.hidden = false;
-  });
-  $('#mock-create-confirm').addEventListener('click', () => showGuide('copy'));
-  $('#mock-copy').addEventListener('click', () => {
-    $('#mock-copy').lastChild.textContent = 'Copied';
+  document.querySelectorAll('[data-guide-scene]').forEach((button) => {
+    button.addEventListener('click', () =>
+      reducedMotion.matches
+        ? studio.staticScene(Number(button.dataset.guideScene))
+        : studio.playScene(Number(button.dataset.guideScene))
+    );
   });
 
-  function stopPin() {
-    pinRun?.abort();
-    pinRun = null;
-    $('#pin-cursor').hidden = true;
-    document
-      .querySelectorAll('#pin-illustration .is-pressed,#pin-illustration .is-hovered')
-      .forEach((node) => node.classList.remove('is-pressed', 'is-hovered'));
-  }
-  async function playPin() {
-    stopPin();
-    $('#pin-menu').hidden = !reducedMotion.matches;
-    $('#pinned-example').hidden = !reducedMotion.matches;
-    $('#pin-example').classList.toggle('is-pinned', reducedMotion.matches);
-    if (reducedMotion.matches || step !== 3) return;
-    pinRun = new AbortController();
-    const { signal } = pinRun;
-    const cursor = $('#pin-cursor');
-    cursor.style.transform = 'translate(30px, 30px)';
-    try {
-      while (!signal.aborted && step === 3) {
-        $('#pin-menu').hidden = true;
-        $('#pinned-example').hidden = true;
-        $('#pin-example').classList.remove('is-pinned');
-        await wait(400, signal);
-        await moveTo(cursor, $('#pin-illustration'), $('#pin-extensions'), signal, 650);
-        await clickIllustration(cursor, $('#pin-extensions'), signal);
-        await wait(350, signal);
-        await moveTo(cursor, $('#pin-illustration'), $('#pin-example'), signal, 500);
-        await clickIllustration(cursor, $('#pin-example'), signal);
-        await wait(700, signal);
-        cursor.hidden = true;
-        await wait(1400, signal);
+  createTrack('pin', {
+    root: '#pin-illustration',
+    cursor: '#pin-cursor',
+    caption: '#pin-caption',
+    paint(index) {
+      $('#pin-menu').hidden = index === 0;
+      $('#pinned-example').hidden = index < 2;
+      $('#pin-example').classList.toggle('is-pinned', index >= 2);
+    },
+    scenes: [
+      {
+        caption: 'Open Extensions in your browser toolbar.',
+        async run(a) {
+          await a.wait(1000);
+          await a.move('#pin-extensions', 700);
+          await a.press('#pin-extensions', () => {
+            $('#pin-menu').hidden = false;
+          });
+          await a.wait(600);
+        }
+      },
+      {
+        caption: 'Find Select Summary and click the pin beside its name.',
+        async run(a) {
+          await a.wait(800);
+          await a.move('#pin-example', 600);
+          await a.press('#pin-example', () => {
+            $('#pin-example').classList.add('is-pinned');
+            $('#pinned-example').hidden = false;
+          });
+          await a.wait(1000);
+        }
+      },
+      {
+        caption: 'The icon stays in your toolbar, ready when you need it.',
+        async run(a) {
+          await a.wait(1300);
+        }
       }
-    } catch (error) {
-      if (error.name !== 'AbortError') pageError(error);
-    }
-  }
-  $('#pin-extensions').addEventListener('click', () => {
-    $('#pin-menu').hidden = !$('#pin-menu').hidden;
+    ],
+    finished:
+      'Use your browser toolbar to pin it. You can also finish without pinning.'
   });
-  $('#pin-example').addEventListener('click', () => {
-    const pinned = !$('#pin-example').classList.contains('is-pinned');
-    $('#pin-example').classList.toggle('is-pinned', pinned);
-    $('#pinned-example').hidden = !pinned;
-  });
-  reducedMotion.addEventListener('change', () => {
-    stopGuide();
-    stopPin();
-    if (step === 1) void playGuide();
-    if (step === 3) void playPin();
-  });
+
+  reducedMotion.addEventListener('change', () =>
+    tracks.forEach((track) => track.motionChanged())
+  );
   return {
-    show(next) {
-      step = next;
-      stopGuide();
-      stopPin();
-      if (step === 1) void playGuide();
-      if (step === 3) void playPin();
+    show(step) {
+      const next = tracks.get(
+        step === 0 ? 'intro' : step === 1 ? 'studio' : step === 3 ? 'pin' : ''
+      );
+      if (active !== next) active?.suspend();
+      active = next;
+      active?.show();
+    },
+    suspend() {
+      active?.suspend();
+    },
+    resume() {
+      active?.resume();
+    },
+    resize() {
+      active?.resize();
     },
     stop() {
-      stopGuide();
-      stopPin();
+      tracks.forEach((track) => track.stop());
     }
   };
 }

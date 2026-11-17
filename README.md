@@ -4,7 +4,7 @@ A lightweight Chrome extension that summarizes highlighted text with Gemini. Bri
 
 Version **3.5.0** is available in this source branch. The [Chrome Web Store listing](https://chromewebstore.google.com/detail/select-summary/cmhemijfkgdmehimocompddmibmbndfd) may contain an earlier release until a new package is published.
 
-This release unifies onboarding around one alignment grid and viewport-sized cards, adds original article infobox visuals, standardizes navigation, and demonstrates creating and selecting an AI Studio project.
+The welcome guide introduces the extension with an animated browser illustration, then guides users through connecting Gemini, hands-on practice, and optional toolbar pinning. The extension popup and shared summary card retain their existing design.
 
 ## Install
 
@@ -24,16 +24,17 @@ Reloading or updating the extension does not automatically open another welcome 
 
 ## Set up
 
-1. **Connect:** Paste your Gemini key into the form on the left. The looping walkthrough on the right creates a project, names it, selects it, and then creates and copies the key. Expand **Get a key** for a direct [Google AI Studio](https://aistudio.google.com/apikey) button.
-2. Use an eligible free-tier project **without billing enabled**. Google's free tier does not require a credit card, but regional availability, project verification, and quotas apply. See [Google's billing guide](https://ai.google.dev/gemini-api/docs/billing).
-3. Paste your key, accept the Google data notice, then press **Verify & Continue**. Only this explicit action sends a small validation request. A failed check stays inline and preserves an existing key.
-4. **Try it:** Highlight paragraph text inside the embedded demo and choose **Summarize selection** from Chrome’s native right-click menu, or press your displayed shortcut. The two tabs contain original practice adaptations of exactly these sources:
+1. **Welcome:** Watch an illustrated passage become a concise summary inside a browser frame, then choose **Get started**. This introduction is a bundled illustration and makes no API requests.
+2. **Connect:** Choose **Get a Gemini key** to open [Google AI Studio](https://aistudio.google.com/apikey), or paste a key you already have. The browser illustration demonstrates creating a key, naming and selecting a project, and copying the key. A connected stage indicator above the illustration fills as each scene plays. Choose a stage to revisit it.
+3. Use an eligible free-tier project **without billing enabled**. Google's free tier does not require a credit card, but regional availability, project verification, and quotas apply. See [Google's billing guide](https://ai.google.dev/gemini-api/docs/billing).
+4. Paste your key, accept the Google data notice, then press **Connect Gemini**. Only this explicit action sends a small validation request. A failed check stays inline and preserves an existing key.
+5. **Try it:** Highlight paragraph text inside the embedded demo and choose **Summarize selection** from Chrome’s native right-click menu, or press your displayed shortcut. Toronto is selected first; both articles include several paragraphs of original source-based practice prose. The two tabs contain original practice adaptations of exactly these sources:
    - [GeeksforGeeks: Hash Table](https://www.geeksforgeeks.org/dsa/hash-table-data-structure/)
    - [Wikipedia: Toronto](https://en.wikipedia.org/wiki/Toronto)
-5. Gemini generates a real response using your connected key. It appears inside the demo using the same summary card as normal webpages. One successful summary updates local history and activity and unlocks Continue. There are no canned demo summaries, custom context menus, or floating Summarize buttons.
-6. **Pin:** Watch the looping pinning illustration, then pin through Chrome’s actual toolbar if desired. Choose **Finish onboarding** to close the onboarding tab.
+6. Gemini generates a real response using your connected key. It appears inside the demo using the same summary card as normal webpages. Successful practice updates local history and activity and enables the primary Continue action. Continue stays disabled until a successful summary in this walkthrough. Ready and completion are also checked by the worker; a previous walkthrough or failed request cannot unlock them. Practice uses no canned responses, custom context menus, or floating Summarize buttons.
+7. **Ready:** Watch the pinning illustration, then pin through Chrome’s actual toolbar if desired. Choose **Open Select Summary** to finish onboarding and open the existing dashboard in the same tab.
 
-Both walkthroughs loop automatically while visible, with no replay controls, typing caret, or numbered pinning callouts. Reduced-motion mode displays static illustrations. Opening help, switching demo tabs, resetting the view, and watching animations make no API requests. Key verification remains an explicit **Verify & Continue** action.
+Illustrations loop while visible without replay controls, and reset when revisited. Switching away pauses the active animation; returning resumes it without starting over. Reduced-motion mode uses static illustrations, and every key-setup scene remains available through the scene buttons. Written pinning and key instructions remain available at all sizes. Opening help, switching demo tabs, resetting the view, and watching animations make no API requests. Key verification remains an explicit **Connect Gemini** action.
 
 ### Embedded practice
 
@@ -41,7 +42,7 @@ The demo uses bundled HTML, original condensed prose based on the two linked art
 
 Only your explicitly selected practice text is sent to Gemini. Tab switching and Reset do not delete saved activity or undo onboarding progress. A response finishing after a tab switch or reset is saved without unexpectedly reopening a card; **Show summary again** restores the current article’s saved result. Browsing and summarization on ordinary webpages continue to work normally.
 
-The onboarding shell and navigation fit the viewport without outer-page scrolling. Long article content can scroll inside the embedded browser. Back, Continue, verification, and completion use the same compact icon-button style. Errors use flat red surfaces without an accent stripe.
+The onboarding uses a shared alignment grid, readable type, browser frames, and a consistent navigation footer. Short or narrow windows can scroll the page to keep every control reachable; article content can also scroll inside the embedded browser. Setup help expands in the document instead of covering the form. Errors use flat red surfaces without an accent stripe.
 
 ## Use
 
@@ -76,11 +77,11 @@ Read [Privacy and data handling](PRIVACY.md), [Google's API terms](https://ai.go
 
 ## How the extension is organized
 
-The repository contains the active extension and its installation, privacy, and license documents. Development test suites, package manifests, dependencies, reports, and screenshots have been removed.
+The runtime is in `chrome-extension/`. Dependency-free regression tests are in `tests/`; the maintainability review is in `docs/CODE_QUALITY_REVIEW.md`. Design artifacts in `work/` are not part of the extension package.
 
 | Component                                                               | Responsibility                                                                    |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `welcome.html`, `welcome.css`, `welcome.js`, `walkthroughs.js`          | Setup, AI Studio/pinning illustrations, and the real-window practice guide        |
+| `welcome.html`, `welcome.css`, `welcome.js`, `walkthroughs.js`          | Animated introduction, Gemini setup, browser illustrations, and required practice |
 | `popup.html`, `bootstrap.js`, `interface.html`, `popup.js`, `popup.css` | Toolbar and standalone dashboard, history, and settings                           |
 | `demo-articles.js`, `article-demo.js`                                   | Bundled practice prose, two article tabs, real selection, and shared result cards |
 | `background.js`                                                         | Validated requests, native command routing, Gemini calls, and persistence         |
@@ -107,3 +108,11 @@ The model is `gemini-3.5-flash-lite`, centralized in `core.js`. Each summary mak
 ## License
 
 The project retains its [GNU GPL v3 license](LICENSE). Original SVG button artwork in `icons.js` and `summary-card.js` is dedicated under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). SVGs are used only inside buttons. The original CSS skyline and hash-table artwork in the welcome page are also dedicated under CC0 1.0. The existing raster extension icon is retained.
+
+## Development checks and maintenance
+
+Run `node --test tests/onboarding.test.mjs` with a current Node release. The tests use simulated provider responses and cover per-run gating, failures, replay, tab isolation and late responses.
+
+Reopening the welcome guide starts at Welcome, resets animations and practice progress, and requires a new successful practice summary. Your saved key, history and activity are preserved. Animations make no provider requests. Browser instructions are neutral; toolbar pinning can differ across compatible browsers.
+
+Onboarding uses the supplied pine-green logo, Georgia headings and warm stone surfaces without remote fonts. Popup and shared summary-card styling are unchanged. See [Changelog](CHANGELOG.md) and [Code quality review](docs/CODE_QUALITY_REVIEW.md) for implemented cleanup, remaining risks and the recommended refactor order. Package only `chrome-extension/`.

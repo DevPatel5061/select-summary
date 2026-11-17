@@ -11,9 +11,9 @@ export class AppError extends Error {
 
 // Segment words by language rather than assuming all text uses spaces.
 export function wordCount(text) {
-  return [...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(text)].filter(
-    (part) => part.isWordLike
-  ).length;
+  return [
+    ...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(text)
+  ].filter((part) => part.isWordLike).length;
 }
 
 export function dayKey(date = new Date()) {
@@ -22,7 +22,12 @@ export function dayKey(date = new Date()) {
 
 // Noon avoids DST transitions when stepping through local calendar dates.
 export function shiftDay(date, amount) {
-  const shifted = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
+  const shifted = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12
+  );
   shifted.setDate(shifted.getDate() + amount);
   return shifted;
 }
@@ -35,7 +40,12 @@ export function initialState() {
     credentialRevision: 0,
     history: [],
     activity: {},
-    onboarding: { version: 1, step: 1, completed: false, sandboxComplete: false },
+    onboarding: {
+      version: 1,
+      step: 1,
+      completed: false,
+      sandboxComplete: false
+    },
     milestones: { firstSummary: false }
   };
 }
@@ -48,7 +58,8 @@ export function migrateState(data) {
         'VERSION',
         'This local data needs a compatible extension version.'
       );
-    const { onboardingStep, tutorialStep, tutorialComplete, ...previous } = data.appState;
+    const { onboardingStep, tutorialStep, tutorialComplete, ...previous } =
+      data.appState;
     const hasActivity = activityStats(previous.activity || {}).total > 0;
     const sandboxComplete = Boolean(tutorialStep >= 1 && hasActivity);
     return {
@@ -66,7 +77,9 @@ export function migrateState(data) {
   }
   const state = initialState();
   state.key =
-    typeof data.geminiApiKey === 'string' ? data.geminiApiKey.trim() || null : null;
+    typeof data.geminiApiKey === 'string'
+      ? data.geminiApiKey.trim() || null
+      : null;
   // Preserve completed legacy installations without inventing historical XP.
   state.onboarding.completed = Boolean(state.key);
   state.history = (Array.isArray(data.summaries) ? data.summaries : [])
@@ -101,10 +114,10 @@ export function addSummary(state, text, sourceWords, timestamp, id) {
     ...state,
     keyValidated: true,
     milestones: { ...state.milestones, firstSummary: true },
-    history: [{ id, text, timestamp, sourceWords, summaryWords }, ...state.history].slice(
-      0,
-      HISTORY_LIMIT
-    ),
+    history: [
+      { id, text, timestamp, sourceWords, summaryWords },
+      ...state.history
+    ].slice(0, HISTORY_LIMIT),
     activity: {
       ...state.activity,
       [day]: {
@@ -137,11 +150,18 @@ export function activityStats(activity, now = new Date()) {
   return {
     total: days.reduce((sum, day) => sum + activity[day].count, 0),
     today: activity[dayKey(now)]?.count || 0,
-    secondsSaved: days.reduce((sum, day) => sum + activity[day].secondsSaved, 0),
+    secondsSaved: days.reduce(
+      (sum, day) => sum + activity[day].secondsSaved,
+      0
+    ),
     bestDay: Math.max(0, ...days.map((day) => activity[day].count)),
     currentStreak,
     bestStreak
   };
+}
+
+export function normalizeSelection(text) {
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 export function validateSelection(text) {

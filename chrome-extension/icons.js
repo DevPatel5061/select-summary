@@ -2,6 +2,8 @@
 // under CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
 // Icons belong inside controls only; they are never decorative title artwork.
 const paths = {
+  minimize: ['M5 12h14'],
+  maximize: ['M5 5h14v14H5z'],
   back: ['M20 12H4m6-6-6 6 6 6'],
   reload: ['M20 7v5h-5', 'M19 12a7 7 0 1 0-2 5M20 12l-3-5'],
   expand: ['M14 4h6v6M20 4l-8 8', 'M10 4H4v16h16v-6'],

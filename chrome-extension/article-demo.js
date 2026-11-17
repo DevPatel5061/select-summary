@@ -28,6 +28,8 @@ export function createArticleDemo(onSummarize) {
     return selection.toString().trim();
   }
   function clearCard() {
+    $('#sandbox-status').textContent = '';
+    $('#sandbox-status').hidden = true;
     revision++;
     card?.destroy();
     card = null;
@@ -116,12 +118,14 @@ export function createArticleDemo(onSummarize) {
         !normalize(DEMO_ARTICLES[articleId].text).includes(normalize(source))
       ) {
         $('#sandbox-status').textContent = 'Highlight paragraph text in the demo first.';
+        $('#sandbox-status').hidden = false;
         return;
       }
       busy = true;
       const id = articleId,
         current = revision;
       $('#sandbox-status').textContent = '';
+      $('#sandbox-status').hidden = true;
       showCard({ kind: 'loading', text: 'Summarizing…' });
       try {
         const result = await onSummarize({
@@ -136,7 +140,10 @@ export function createArticleDemo(onSummarize) {
       } catch (error) {
         if (enabled && articleId === id && revision === current)
           showCard({ kind: 'error', text: error.message });
-        $('#sandbox-status').textContent = error.message;
+        if (!(enabled && articleId === id && revision === current)) {
+          $('#sandbox-status').textContent = error.message;
+          $('#sandbox-status').hidden = false;
+        }
       } finally {
         busy = false;
       }

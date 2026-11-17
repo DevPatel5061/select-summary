@@ -96,6 +96,7 @@ export function createWalkthroughs(onError) {
   }
   function showGuide(scene) {
     $('#create-overlay').hidden = scene !== 'create';
+    $('#project-overlay').hidden = scene !== 'project';
     $('#copy-overlay').hidden = scene !== 'copy';
     $('#paste-scene').hidden = scene !== 'paste';
     $('#studio-address').textContent =
@@ -104,7 +105,8 @@ export function createWalkthroughs(onError) {
         : 'aistudio.google.com/api-keys';
     const captions = {
       keys: 'Open API Keys. Copy an existing key, or choose Create API key.',
-      create: 'Name the key, choose an imported project, then click Create key.',
+      create: 'Name your key and choose a project.',
+      project: 'Create a project, name it, and select it for your key.',
       copy: 'Copy your new key. Keep project billing disabled for the free tier.',
       paste: 'Paste your key here, accept the data notice, then press Verify & Continue.'
     };
@@ -124,6 +126,9 @@ export function createWalkthroughs(onError) {
       while (!signal.aborted && step === 1) {
         scene = 'keys';
         projectList.hidden = true;
+        projectOption.hidden = true;
+        $('#mock-project-label').textContent = 'Create project';
+        $('#mock-project-name').textContent = '';
         $('#mock-copy').lastChild.textContent = 'Copy';
         showGuide(scene);
         if (scene === 'keys') {
@@ -142,13 +147,17 @@ export function createWalkthroughs(onError) {
           await moveTo(cursor, $('#studio-guide'), $('#mock-project'), signal);
           await clickIllustration(cursor, $('#mock-project'), signal);
           await wait(250, signal);
-          await moveTo(
-            cursor,
-            $('#studio-guide'),
-            $('#mock-project-option'),
-            signal,
-            240
-          );
+          await moveTo(cursor, $('#studio-guide'), $('#mock-new-project'), signal, 260);
+          await clickIllustration(cursor, $('#mock-new-project'), signal);
+          await moveTo(cursor, $('#studio-guide'), $('#mock-project-name'), signal);
+          for (const character of 'Select Summary') {
+            $('#mock-project-name').textContent += character;
+            await wait(65, signal);
+          }
+          await moveTo(cursor, $('#studio-guide'), $('#mock-project-create'), signal);
+          await clickIllustration(cursor, $('#mock-project-create'), signal);
+          await wait(350, signal);
+          await moveTo(cursor, $('#studio-guide'), $('#mock-project-option'), signal);
           await clickIllustration(cursor, $('#mock-project-option'), signal);
           await moveTo(cursor, $('#studio-guide'), $('#mock-create-confirm'), signal);
           await clickIllustration(cursor, $('#mock-create-confirm'), signal);
@@ -185,8 +194,13 @@ export function createWalkthroughs(onError) {
   projectOption.id = 'mock-project-option';
   projectOption.type = 'button';
   projectOption.tabIndex = -1;
-  projectOption.textContent = 'Default Gemini Project';
-  projectList.append(projectOption);
+  projectOption.textContent = 'Select Summary';
+  projectOption.hidden = true;
+  const newProject = document.createElement('button');
+  newProject.id = 'mock-new-project';
+  newProject.tabIndex = -1;
+  newProject.textContent = 'Create project';
+  projectList.append(projectOption, newProject);
   $('#mock-project').parentElement.append(projectList);
   $('#mock-project').addEventListener('click', () => {
     projectList.hidden = !projectList.hidden;
@@ -194,6 +208,16 @@ export function createWalkthroughs(onError) {
   });
   projectOption.addEventListener('click', () => {
     projectList.hidden = true;
+    $('#mock-project-label').textContent = 'Select Summary';
+  });
+  newProject.addEventListener('click', () => {
+    projectList.hidden = true;
+    showGuide('project');
+  });
+  $('#mock-project-create').addEventListener('click', () => {
+    showGuide('create');
+    projectOption.hidden = false;
+    projectList.hidden = false;
   });
   $('#mock-create-confirm').addEventListener('click', () => showGuide('copy'));
   $('#mock-copy').addEventListener('click', () => {

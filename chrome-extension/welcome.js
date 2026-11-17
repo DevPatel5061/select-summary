@@ -1,4 +1,3 @@
-import { activityStats } from './core.js';
 import { decorateButtons } from './icons.js';
 import { shortcutKeys, matchesShortcut } from './shortcuts.js';
 import { createArticleDemo } from './article-demo.js';
@@ -31,6 +30,10 @@ async function request(type, fields = {}) {
   } catch {
     throw new Error('The extension disconnected. Reload this page and try again.');
   }
+  if (!response?.ok && response?.error?.message === 'Unknown request.')
+    throw new Error(
+      'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
+    );
   if (!response?.ok)
     throw new Error(
       response?.error?.message || 'Could not complete that action. Try again.'
@@ -54,8 +57,9 @@ function updateConnect() {
   $('#verified-key').hidden = !connected;
   $('#key-form').hidden = connected;
   $('#continue-connect').hidden = !connected;
-  $('#cancel-key').hidden = !changingKey || !state?.keyValidated;
-  $('#cancel-key').disabled = verifying;
+  $('#connected-actions').hidden = !connected;
+  $('#cancel-key').hidden = false;
+  $('#cancel-key').disabled = verifying || !changingKey || !state?.keyValidated;
   $('#saved-key-label').textContent = `Key ending in ${state?.keySuffix || ''}`;
   const useStored = Boolean(state?.keyConfigured && !changingKey);
   $('#stored-key-hint').hidden = !useStored;
@@ -66,7 +70,9 @@ function updateConnect() {
     verifying ||
     !$('#google-consent').checked ||
     (!$('#api-key').value.trim() && !useStored);
-  $('#verify-key').textContent = verifying ? 'Verifying…' : 'Verify & Continue';
+  const button = $('#verify-key');
+  const text = [...button.childNodes].find((node) => node.nodeType === Node.TEXT_NODE);
+  if (text) text.textContent = verifying ? 'Verifying…' : 'Verify & continue';
 }
 
 function clearKeys() {
@@ -96,16 +102,15 @@ function renderKeys(shortcut, platform) {
 async function snapshot() {
   const serial = ++snapshotSerial;
   const result = await request('GET_STATE');
+  if (result.interfaceVersion !== 1)
+    throw new Error(
+      'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
+    );
   if (serial !== snapshotSerial) return;
   state = result.state;
   renderKeys(result.shortcut, result.platform);
   if (!verifying) updateConnect();
   $('#continue-sandbox').disabled = !state.onboarding.sandboxComplete;
-  $('#summary-reward').hidden = !state.onboarding.sandboxComplete;
-  if (state.onboarding.sandboxComplete) {
-    $('#reward-streak').textContent =
-      `${activityStats(state.activity).currentStreak}-day streak`;
-  }
 }
 async function showStep(next, { persist = true, focus = true } = {}) {
   if (!state) return;

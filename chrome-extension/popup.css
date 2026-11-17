@@ -570,7 +570,6 @@ kbd {
   max-width: 500px;
   margin: auto;
   border: 1px solid #b7cff1;
-  border-left: 3px solid var(--blue);
   border-radius: 12px;
   background: white;
   box-shadow: 0 6px 30px #151b2820;
@@ -727,4 +726,15 @@ dialog p {
 }
 .settings-panel details a {
   margin-right: 12px;
+}
+
+.notice[data-level='error'],
+.form-status[role='alert'] {
+  color: #b42335;
+  background: #fff0f1;
+  border: 0;
+}
+.notice[data-level='error'] p,
+.notice[data-level='error'] strong {
+  color: #b42335;
 }

@@ -242,6 +242,7 @@ async function appRequest(message) {
         chrome.commands.getAll()
       ]);
       return {
+        interfaceVersion: 1,
         state: publicState(stored),
         platform: platform.os,
         shortcut:
@@ -349,7 +350,10 @@ async function appRequest(message) {
       return {};
     }
     default:
-      throw new AppError('MESSAGE', 'Unknown request.');
+      throw new AppError(
+        'UPDATE_REQUIRED',
+        'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
+      );
   }
 }
 

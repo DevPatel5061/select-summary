@@ -49,6 +49,7 @@ function toast(message) {
 }
 
 function showProblem(error) {
+  $('#notice').dataset.level = 'error';
   $('#notice-title').textContent = 'Unable to complete action';
   $('#notice-message').textContent = error.message;
   $('#notice').hidden = false;
@@ -267,6 +268,7 @@ function createKeyForm(container, replacement = false) {
     consent.disabled = true;
     if (cancel) cancel.disabled = true;
     updateSubmit();
+    status.setAttribute('role', 'status');
     status.textContent = 'Checking Gemini…';
     try {
       await request('CONNECT_KEY', { key: input.value.trim(), consent: consent.checked });
@@ -306,6 +308,7 @@ async function refresh() {
   $('#boot').hidden = true;
   $('#notice').hidden = !currentNotice || currentNotice.level === 'success';
   if (currentNotice) {
+    $('#notice').dataset.level = currentNotice.level;
     $('#notice-title').textContent = currentNotice.title;
     $('#notice-message').textContent = currentNotice.message;
   }

@@ -128,7 +128,19 @@ button:focus-visible {
   margin-top: 17px;
 }
 .error {
-  border-left: 3px solid #0868e8;
+  border: 0;
+  background: #fff0f1;
+}
+.error .brand,
+.error .text,
+.error .close {
+  color: #b42335;
+}
+.error .timer-track {
+  stroke: #f4d5da;
+}
+.error .timer-progress {
+  stroke: #d9939e;
 }
 
 @keyframes arrive {

@@ -64,19 +64,21 @@
               <p id="stored-key-hint" class="fine-print" hidden></p>
               <details id="key-help" class="key-help">
                 <summary>Get a key</summary>
-                <ol>
-                  <li>Sign in to Google AI Studio.</li>
-                  <li>Create or copy a key from a project with billing off.</li>
-                  <li>Return here and paste it above.</li>
-                </ol>
-                <button
-                  id="open-studio"
-                  class="button secondary"
-                  type="button"
-                  data-icon="expand"
-                >
-                  Open Google AI Studio
-                </button>
+                <div class="key-help-content">
+                  <ol>
+                    <li>Sign in to Google AI Studio.</li>
+                    <li>Create or copy a key from a project with billing off.</li>
+                    <li>Return here and paste it above.</li>
+                  </ol>
+                  <button
+                    id="open-studio"
+                    class="button secondary"
+                    type="button"
+                    data-icon="expand"
+                  >
+                    Open Google AI Studio
+                  </button>
+                </div>
               </details>
               <p class="fine-print free-note">
                 Free tier available. Keep project billing off; Google’s limits apply.
@@ -94,21 +96,33 @@
                 ></label
               >
               <p id="key-status" class="form-message" role="status"></p>
-              <button
-                id="verify-key"
-                class="button primary full-width"
-                type="submit"
-                disabled
-              >
-                Verify &amp; Continue
-              </button>
-              <button id="cancel-key" class="text-button cancel-key" type="button" hidden>
-                Keep current key
-              </button>
+              <div class="nav-actions">
+                <button
+                  id="cancel-key"
+                  class="button secondary"
+                  data-icon="back"
+                  type="button"
+                  disabled
+                >
+                  Back
+                </button>
+                <button
+                  id="verify-key"
+                  class="button primary"
+                  data-icon="arrow"
+                  type="submit"
+                  disabled
+                >
+                  Verify &amp; Continue
+                </button>
+              </div>
             </form>
-            <button id="continue-connect" class="button primary full-width" hidden>
-              Continue
-            </button>
+            <div id="connected-actions" class="nav-actions" hidden>
+              <button class="button secondary" data-icon="back" disabled>Back</button
+              ><button id="continue-connect" class="button primary" data-icon="arrow">
+                Continue
+              </button>
+            </div>
           </div>
           <div class="guide-column">
             <div class="visual-heading">
@@ -170,7 +184,7 @@
                   <div class="mock-field" id="mock-name">Select Summary</div>
                   <span class="mock-label">Choose an imported project</span
                   ><button id="mock-project" class="mock-field" tabindex="-1">
-                    Default Gemini Project <span>⌄</span>
+                    <span id="mock-project-label">Create project</span><span>⌄</span>
                   </button>
                   <div class="mock-dialog-actions">
                     <span>Cancel</span
@@ -180,10 +194,23 @@
                   </div>
                 </div>
               </div>
+              <div class="studio-overlay" id="project-overlay" aria-hidden="true" hidden>
+                <div class="studio-dialog">
+                  <h3>Create project</h3>
+                  <span class="mock-label">Project name</span>
+                  <div class="mock-field" id="mock-project-name"></div>
+                  <div class="mock-dialog-actions">
+                    <span>Cancel</span
+                    ><button id="mock-project-create" class="studio-button" tabindex="-1">
+                      Create project
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div class="studio-overlay" id="copy-overlay" aria-hidden="true" hidden>
                 <div class="studio-dialog">
                   <h3>Your API key</h3>
-                  <p class="mock-description">Select Summary · Default Gemini Project</p>
+                  <p class="mock-description">Select Summary · Select Summary</p>
                   <div class="mock-key-row">
                     <code>••••••••••••••••••••••••</code
                     ><button
@@ -203,7 +230,7 @@
                 <h3>Add your API key</h3>
                 <span class="mock-label">Gemini API key</span>
                 <div class="mock-field" id="mock-paste">
-                  <span id="mock-paste-value"></span><span class="typing-caret"></span>
+                  <span id="mock-paste-value"></span>
                 </div>
                 <div class="mock-connect">Verify &amp; Continue</div>
               </div>
@@ -227,7 +254,7 @@
           <p class="lead">Highlight text, then right-click → Summarize selection.</p>
         </div>
         <div class="demo-tools">
-          <span>Or use your shortcut</span>
+          <span>Or highlight text, then press</span>
           <div
             id="shortcut-keys"
             class="shortcut-keys"
@@ -235,26 +262,33 @@
           ></div>
         </div>
         <div class="article-demo" id="article-demo">
-          <div class="demo-tabs" role="tablist" aria-label="Practice articles">
-            <button
-              id="tab-hash"
-              data-article="hash"
-              role="tab"
-              aria-selected="true"
-              aria-controls="article-hash"
-            >
-              Hash Table · GeeksforGeeks
-            </button>
-            <button
-              id="tab-toronto"
-              data-article="toronto"
-              role="tab"
-              aria-selected="false"
-              aria-controls="article-toronto"
-              tabindex="-1"
-            >
-              Toronto · Wikipedia
-            </button>
+          <div class="demo-tab-bar">
+            <span class="window-controls" aria-hidden="true"
+              ><button type="button" tabindex="-1" disabled data-icon="close"></button
+              ><button type="button" tabindex="-1" disabled data-icon="minimize"></button
+              ><button type="button" tabindex="-1" disabled data-icon="maximize"></button
+            ></span>
+            <div class="demo-tabs" role="tablist" aria-label="Practice articles">
+              <button
+                id="tab-hash"
+                data-article="hash"
+                role="tab"
+                aria-selected="true"
+                aria-controls="article-hash"
+              >
+                Hash Table · GeeksforGeeks
+              </button>
+              <button
+                id="tab-toronto"
+                data-article="toronto"
+                role="tab"
+                aria-selected="false"
+                aria-controls="article-toronto"
+                tabindex="-1"
+              >
+                Toronto · Wikipedia
+              </button>
+            </div>
           </div>
           <div class="demo-address-bar">
             <button
@@ -269,8 +303,22 @@
               aria-label="Article source URL"
               value="https://www.geeksforgeeks.org/dsa/hash-table-data-structure/"
             />
+            <button
+              id="restore-summary"
+              class="text-button restore-summary"
+              hidden
+              aria-label="Show last summary"
+            >
+              Summary
+            </button>
           </div>
           <div class="demo-viewport" id="demo-viewport">
+            <p
+              id="sandbox-status"
+              class="form-message demo-error"
+              role="alert"
+              hidden
+            ></p>
             <div class="demo-scroll">
               <article
                 id="article-hash"
@@ -281,10 +329,24 @@
                 <header class="article-brand">GeeksforGeeks</header>
                 <div class="article-content">
                   <h2>Hash Table Data Structure</h2>
-                  <p id="text-hash" data-demo-text="hash" tabindex="0"></p>
-                  <p class="article-credit">
-                    Practice adaptation · Source: GeeksforGeeks
-                  </p>
+                  <div class="article-columns">
+                    <p id="text-hash" data-demo-text="hash" tabindex="0"></p>
+                    <aside
+                      class="article-visual hash-visual"
+                      aria-label="Hash table diagram mapping keys to indexed values"
+                    >
+                      <h3>Inside a hash table</h3>
+                      <div class="hash-head">
+                        <span>Key</span><span>Index</span><span>Value</span>
+                      </div>
+                      <div class="hash-row">
+                        <span>apple</span><b>0</b><span>42</span>
+                      </div>
+                      <div class="hash-row"><span>pear</span><b>1</b><span>17</span></div>
+                      <div class="hash-row"><span>plum</span><b>2</b><span>63</span></div>
+                      <p>A hash function locates each key’s bucket.</p>
+                    </aside>
+                  </div>
                 </div>
               </article>
               <article
@@ -298,25 +360,52 @@
                 <div class="article-content">
                   <h2>Toronto</h2>
                   <p class="article-byline">From Wikipedia, the free encyclopedia</p>
-                  <p id="text-toronto" data-demo-text="toronto" tabindex="0"></p>
-                  <p class="article-credit">Practice adaptation · Source: Wikipedia</p>
+                  <div class="article-columns">
+                    <p id="text-toronto" data-demo-text="toronto" tabindex="0"></p>
+                    <aside class="article-visual toronto-visual">
+                      <div
+                        class="city-scene"
+                        role="img"
+                        aria-label="Original illustration of Toronto’s skyline above Lake Ontario"
+                      >
+                        <i class="city-building building-one"></i
+                        ><i class="city-building building-two"></i
+                        ><i class="city-building building-three"></i
+                        ><i class="city-building building-four"></i
+                        ><i class="cn-tower"></i><i class="lake"></i>
+                      </div>
+                      <h3>Toronto</h3>
+                      <dl>
+                        <div>
+                          <dt>Province</dt>
+                          <dd>Ontario</dd>
+                        </div>
+                        <div>
+                          <dt>Waterfront</dt>
+                          <dd>Lake Ontario</dd>
+                        </div>
+                        <div>
+                          <dt>Incorporated</dt>
+                          <dd>1834</dd>
+                        </div>
+                      </dl>
+                    </aside>
+                  </div>
                 </div>
               </article>
             </div>
           </div>
         </div>
-        <div class="demo-result-status">
-          <p id="sandbox-status" class="form-message" role="status"></p>
-          <button id="restore-summary" class="text-button" hidden>
-            Show summary again
-          </button>
-        </div>
-        <div id="summary-reward" class="summary-reward" role="status" hidden>
-          <span>Summary saved</span><span id="reward-streak"></span>
-        </div>
         <div class="wizard-actions">
-          <button class="button secondary" id="back-connect">Back</button
-          ><button class="button primary" id="continue-sandbox" disabled>Continue</button>
+          <button class="button secondary" id="back-connect" data-icon="back">Back</button
+          ><button
+            class="button primary"
+            id="continue-sandbox"
+            data-icon="arrow"
+            disabled
+          >
+            Continue
+          </button>
         </div>
       </section>
       <section
@@ -330,9 +419,13 @@
             <h1 id="pin-title" tabindex="-1">Pin Select Summary.</h1>
             <p class="lead">Keep it in Chrome’s toolbar.</p>
             <p id="pin-status" class="fine-print"></p>
-            <button id="finish-welcome" class="button primary finish-button">
-              Finish onboarding</button
-            ><button id="back-sandbox" class="text-button">Back</button>
+            <div class="nav-actions">
+              <button id="back-sandbox" class="button secondary" data-icon="back">
+                Back</button
+              ><button id="finish-welcome" class="button primary" data-icon="check">
+                Finish onboarding
+              </button>
+            </div>
           </div>
           <div class="pin-demo-column">
             <div

@@ -20,27 +20,37 @@ function wrapSource(source) {
   return `<source>\n${escapedSource}\n</source>`;
 }
 
-function responseText(data) {
-  const candidate = data?.candidates?.[0];
-  if (
+function validateCompletion(data, candidate) {
+  const isIncomplete =
     data?.promptFeedback?.blockReason ||
-    (candidate?.finishReason && candidate.finishReason !== 'STOP')
-  ) {
+    (candidate?.finishReason && candidate.finishReason !== 'STOP');
+
+  if (isIncomplete) {
     throw new AppError(
       'INCOMPLETE',
       'Gemini could not complete this summary. Try a different selection.',
     );
   }
+}
+
+function responseText(data) {
+  const candidate = data?.candidates?.[0];
+
+  validateCompletion(data, candidate);
+
   const text = candidate?.content?.parts
     ?.filter((part) => !part.thought && typeof part.text === 'string')
     .map((part) => part.text)
     .join(' ')
     .trim();
-  if (!text)
+
+  if (!text) {
     throw new AppError(
       'EMPTY_RESPONSE',
       'Gemini returned no summary. Try a different selection.',
     );
+  }
+
   return text.replace(/\s+/g, ' ').trim();
 }
 
@@ -51,8 +61,8 @@ async function generate(
     fetcher = fetch,
     signal = AbortSignal.timeout(24_000),
     instruction = INSTRUCTION,
-    maxOutputTokens = 384,
-  } = {},
+    maxOutputTokens = 384
+  } = {}
 ) {
   const source = validateSelection(text);
   if (typeof key !== 'string' || !key.trim())
@@ -71,19 +81,21 @@ async function generate(
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: instruction }] },
-        contents: [{ role: 'user', parts: [{ text: wrapSource(source) }] }],
+        contents: [{ role: 'user', parts: [{ text: source }] }],
         generationConfig: {
           maxOutputTokens,
-          thinkingConfig: { thinkingLevel: 'minimal' },
-        },
-      }),
+          thinkingConfig: { thinkingLevel: 'minimal' }
+        }
+      })
     });
   } catch {
-    if (signal.aborted)
+    if (signal.aborted) {
       throw new AppError(
         'TIMEOUT',
         'This is taking longer than expected. Try again in a moment.',
       );
+    }
+
     throw new AppError(
       'NETWORK',
       'Could not reach Gemini. Check your connection and try again.',
@@ -93,32 +105,60 @@ async function generate(
     if ([400, 401, 403].includes(response.status))
       throw new AppError(
         'AUTH',
-        'Gemini could not use this key. Check the key, Gemini API access, and project restrictions in Google AI Studio.',
+        'Gemini could not use this key. Check the key, Gemini API access, and project restrictions in Google AI Studio.'
       );
     if (response.status === 429)
       throw new AppError(
         'QUOTA',
-        'Your Gemini quota is currently exhausted. Wait for it to reset and check your limits in Google AI Studio.',
+        'Your Gemini quota is currently exhausted. Wait for it to reset and check your limits in Google AI Studio.'
       );
     if (response.status === 404)
       throw new AppError(
         'MODEL',
-        'This Gemini model is unavailable for your project. Check for an extension update.',
+        'This Gemini model is unavailable for your project. Check for an extension update.'
       );
     throw new AppError(
       'SERVICE',
-      'Gemini is temporarily unavailable. Please try again later.',
+      'Gemini is temporarily unavailable. Please try again later.'
     );
   }
   try {
     return responseText(await response.json());
   } catch (error) {
-    if (error instanceof AppError) throw error;
+    if (error instanceof AppError) {
+      throw error;
+    }
+
     throw new AppError(
       'RESPONSE',
       'Gemini sent an unreadable response. Please try again.',
     );
   }
+}
+
+async function generate(
+  text,
+  key,
+  {
+    fetcher = fetch,
+    signal = AbortSignal.timeout(24_000),
+    instruction = INSTRUCTION,
+    maxOutputTokens = 384
+  } = {}
+) {
+  const source = validateSelection(text);
+
+  validateKey(key);
+
+  const response = await fetchSummary(source, key, {
+    fetcher, signal, instruction, maxOutputTokens
+  });
+
+  if (!response.ok) {
+    throw responseError(response);
+  }
+
+  return readResponse(response);
 }
 
 // Summaries and validation share authentication, timeouts, and safe errors.
@@ -136,22 +176,36 @@ export async function validateApiKey(key, options = {}) {
 }
 
 function conciseText(text, limit = 45) {
-  if (wordCount(text) <= limit) return text;
+  if (wordCount(text) <= limit) {
+    return text;
+  }
 
   let complete = '';
+
   for (const { segment } of new Intl.Segmenter(undefined, {
     granularity: 'sentence',
   }).segment(text)) {
-    if (wordCount(complete + segment) > limit) break;
+    if (wordCount(complete + segment) > limit) {
+      break;
+    }
+
     complete += segment;
   }
-  if (complete.trim()) return complete.trim();
 
-  // If the provider returns one long sentence, end at a word boundary and
-  // visibly mark the excerpt instead of pretending it is a complete sentence.
+  if (complete.trim()) {
+    return complete.trim();
+  }
+
+  return truncateAtWordBoundary(text, limit);
+}
+
+function truncateAtWordBoundary(text, limit) {
+  // A single long sentence needs a word boundary and a visible excerpt marker.
   const words = [
     ...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(text),
   ].filter((part) => part.isWordLike);
-  const last = words[limit - 1];
-  return text.slice(0, last.index + last.segment.length).trim() + '…';
+
+  const lastWord = words[limit - 1];
+
+  return text.slice(0, lastWord.index + lastWord.segment.length).trim() + '…';
 }

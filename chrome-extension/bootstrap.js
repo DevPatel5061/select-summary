@@ -1,11 +1,17 @@
-// Load the bundled dashboard markup for toolbar and standalone popup views.
 // The only HTML parsed here is the extension's own bundled file.
 try {
   const response = await fetch(chrome.runtime.getURL('interface.html'));
-  if (!response.ok) throw new Error('Local interface unavailable');
+
+  if (!response.ok) {
+    throw new Error('Local interface unavailable');
+  }
+
   const template = document.createElement('template');
+
   template.innerHTML = await response.text();
+
   document.body.replaceChildren(template.content.cloneNode(true));
+
   await import('./popup.js');
 } catch {
   document.body.textContent =

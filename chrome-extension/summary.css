@@ -1,23 +1,34 @@
+@import url("theme.css");
+
 :host {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-  color: #252723;
-  color-scheme: light;
+  color: var(--ink);
   direction: ltr;
   text-align: left;
 }
+:host([data-theme="dark"]) .card {
+  color-scheme: dark;
+}
+
+/* The embedded card follows its extension page across the shadow boundary. */
+:host([data-placement="embedded"]) .card {
+  color-scheme: var(--extension-color-scheme, light);
+}
+
 * {
   box-sizing: border-box;
 }
 .card {
   width: 100%;
   padding: 18px;
-  background: white;
-  border: 1px solid #e5e3dc;
+  color-scheme: light;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 13px;
   box-shadow:
-    0 12px 40px #15473e1a,
-    0 2px 8px #15473e0d;
+    0 12px 40px var(--card-shadow),
+    0 2px 8px var(--card-shadow-near);
   font-family: inherit;
 }
 .card.is-entering {
@@ -37,7 +48,7 @@
   font-size: 18px;
   line-height: 1.3;
   font-weight: 600;
-  color: #15473e;
+  color: var(--accent);
   letter-spacing: -0.3px;
 }
 .brand img {
@@ -56,7 +67,7 @@ button {
     transform 160ms;
 }
 button:focus-visible {
-  outline: 3px solid #8cafa6;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 .close {
@@ -64,11 +75,11 @@ button:focus-visible {
   height: 30px;
   padding: 1px;
   background: transparent;
-  color: #686a63;
+  color: var(--muted);
   flex-shrink: 0;
 }
 .close:hover {
-  background: #e6f0ee;
+  background: var(--accent-soft);
 }
 .close svg {
   display: block;
@@ -76,10 +87,10 @@ button:focus-visible {
   height: 28px;
 }
 .timer-track {
-  stroke: #e5e3dc;
+  stroke: var(--line);
 }
 .timer-progress {
-  stroke: #a4b7ae;
+  stroke: var(--timer-progress);
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
   transform: rotate(-90deg);
@@ -93,13 +104,13 @@ button:focus-visible {
   overflow: auto;
   font-size: 14px;
   line-height: 1.75;
-  color: #40483f;
+  color: var(--body-ink);
   margin: 0;
   user-select: text;
 }
 .text::selection {
-  background: #e6f0ee;
-  color: #15473e;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .actions {
   display: flex;
@@ -111,8 +122,8 @@ button:focus-visible {
   align-items: center;
   gap: 7px;
   min-height: 36px;
-  background: #15473e;
-  color: white;
+  background: var(--accent-fill);
+  color: var(--on-accent);
   font-size: 12px;
   font-weight: 550;
 }
@@ -121,7 +132,7 @@ button:focus-visible {
   height: 16px;
 }
 .copy:hover {
-  background: #0f352e;
+  background: var(--accent-fill-hover);
 }
 .copy:active {
   transform: translateY(1px);
@@ -135,7 +146,7 @@ button:focus-visible {
   display: block;
   height: 13px;
   border-radius: 4px;
-  background: #eceee8;
+  background: var(--skeleton-start);
   animation: skeleton-pulse 1200ms ease-in-out infinite alternate;
 }
 .skeleton span:nth-child(2) {
@@ -145,19 +156,19 @@ button:focus-visible {
   width: 65%;
 }
 .error {
-  border-color: #edcfca;
-  background: #fff0ee;
+  border-color: var(--card-error-line);
+  background: var(--danger-surface);
 }
 .error .brand,
 .error .text,
 .error .close {
-  color: #a93d3d;
+  color: var(--danger-ink);
 }
 .error .timer-track {
-  stroke: #eacec9;
+  stroke: var(--error-timer-track);
 }
 .error .timer-progress {
-  stroke: #cb9f96;
+  stroke: var(--error-timer-progress);
 }
 @keyframes arrive {
   from {
@@ -171,10 +182,10 @@ button:focus-visible {
 }
 @keyframes skeleton-pulse {
   from {
-    background-color: #eceee8;
+    background-color: var(--skeleton-start);
   }
   to {
-    background-color: #cdd4cb;
+    background-color: var(--skeleton-end);
   }
 }
 @media (prefers-reduced-motion: reduce) {

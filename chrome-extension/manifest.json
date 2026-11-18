@@ -38,7 +38,7 @@
   "host_permissions": ["https://generativelanguage.googleapis.com/*"],
   "web_accessible_resources": [
     {
-      "resources": ["summary.css", "icon/onboarding.svg"],
+      "resources": ["summary.css", "theme.css", "icon/onboarding.svg"],
       "matches": ["http://*/*", "https://*/*"]
     }
   ],

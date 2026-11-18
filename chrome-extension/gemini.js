@@ -81,7 +81,7 @@ async function generate(
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: instruction }] },
-        contents: [{ role: 'user', parts: [{ text: source }] }],
+        contents: [{ role: 'user', parts: [{ text: wrapSource(source) }] }],
         generationConfig: {
           maxOutputTokens,
           thinkingConfig: { thinkingLevel: 'minimal' }
@@ -134,31 +134,6 @@ async function generate(
       'Gemini sent an unreadable response. Please try again.',
     );
   }
-}
-
-async function generate(
-  text,
-  key,
-  {
-    fetcher = fetch,
-    signal = AbortSignal.timeout(24_000),
-    instruction = INSTRUCTION,
-    maxOutputTokens = 384
-  } = {}
-) {
-  const source = validateSelection(text);
-
-  validateKey(key);
-
-  const response = await fetchSummary(source, key, {
-    fetcher, signal, instruction, maxOutputTokens
-  });
-
-  if (!response.ok) {
-    throw responseError(response);
-  }
-
-  return readResponse(response);
 }
 
 // Summaries and validation share authentication, timeouts, and safe errors.

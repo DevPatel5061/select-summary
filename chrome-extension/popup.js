@@ -3,6 +3,7 @@ import { createKeyField } from './shared/key-field.js';
 import { createRefreshQueue } from './shared/refresh.js';
 import { activityStats, dashboardHeadline, dayKey, shiftDay } from './core.js';
 import { decorateButtons, icon } from './icons.js';
+import { bindThemeToggle } from './shared/theme-page.js';
 
 const $ = (selector) => document.querySelector(selector);
 let state;
@@ -374,6 +375,7 @@ const isToolbarPopup = chrome.extension
   .getViews({ type: 'popup' })
   .includes(window);
 decorateButtons();
+bindThemeToggle($('.theme-toggle'), showProblem);
 document.body.classList.toggle('window-mode', !isToolbarPopup);
 document
   .querySelectorAll('[data-view]')

@@ -1,6 +1,11 @@
+import { initializeTheme } from './shared/theme-page.js';
+
 // The only HTML parsed here is the extension's own bundled file.
 try {
-  const response = await fetch(chrome.runtime.getURL('interface.html'));
+  const [response] = await Promise.all([
+    fetch(chrome.runtime.getURL('interface.html')),
+    initializeTheme()
+  ]);
 
   if (!response.ok) {
     throw new Error('Local interface unavailable');

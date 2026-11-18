@@ -1,0 +1,101 @@
+/* The green accent pairs with warm surfaces in light mode and cool surfaces in dark mode. */
+:root,
+:host {
+  --surface: light-dark(#ffffff, #171f1c);
+  --wash: light-dark(#f6f5f2, #111815);
+  --ink: light-dark(#252723, #e7eee8);
+  --body-ink: light-dark(#40483f, #c6d3ca);
+  --muted: light-dark(#686a63, #a8b8ae);
+  --line: light-dark(#e5e3dc, #34443c);
+  --focus: light-dark(#8cafa6, #87c7ad);
+  --accent: light-dark(#15473e, #9dd9bf);
+  --accent-hover: var(--accent-fill-hover);
+  --accent-soft: light-dark(#e6f0ee, #20382f);
+  --accent-line: light-dark(#cadcd5, #395d4e);
+  --accent-fill: light-dark(#15473e, #9dd9bf);
+  --accent-fill-hover: light-dark(#0f352e, #b3e5ce);
+  --on-accent: light-dark(#ffffff, #11281e);
+  --inverse-ink: light-dark(#ffffff, #e7eee8);
+  --disabled-ink: light-dark(#74776f, #b0beb5);
+  --icon-muted: light-dark(#71717a, #a6b6ae);
+
+  --error-ink: light-dark(#b42335, #ffadb6);
+  --error-surface: light-dark(#fff0f1, #361f25);
+  --danger-ink: light-dark(#a93d3d, #ffaaa1);
+  --danger-surface: light-dark(#fff0ee, #341f20);
+  --danger-line: light-dark(#e5cecb, #694048);
+  --danger-hover-line: light-dark(#d9afab, #a96065);
+  --success-ink: light-dark(#26724e, #9cdbb5);
+  --success-fill: light-dark(#26724e, #83c69f);
+  --success-soft: light-dark(#edf8f1, #21382c);
+  --success-line: light-dark(#d7ebdf, #365849);
+  --verified-line: light-dark(#d9eadd, #385d49);
+  --verified-surface: light-dark(#f3faf5, #1d3025);
+
+  --navigation-surface: light-dark(#eeede8, #202a25);
+  --button-line: light-dark(#d8ddd5, #3d4c43);
+  --button-hover-line: light-dark(#b8d0c6, #4c7967);
+  --toast-surface: light-dark(#252723, #26342d);
+  --tooltip-surface: light-dark(#15473e, #263b32);
+  --tooltip-line: light-dark(#0f352e, #486456);
+  --tooltip-muted: light-dark(#e6f0ee, #bed4c8);
+  --backdrop: light-dark(rgba(37, 39, 35, 0.333), rgba(0, 0, 0, 0.65));
+
+  --metric-green-line: light-dark(#d5e4de, #34574a);
+  --metric-sand: light-dark(#efede4, #2d2a20);
+  --metric-sand-ink: light-dark(#5f5944, #ddd0ab);
+  --metric-sand-line: light-dark(#e3dfd2, #504834);
+  --metric-amber: light-dark(#f6ebdc, #36291e);
+  --metric-amber-ink: light-dark(#835526, #edbe92);
+  --metric-amber-line: light-dark(#ebdcc8, #5b432e);
+  --metric-lilac: light-dark(#ede9f1, #2b2433);
+  --metric-lilac-ink: light-dark(#60516f, #d4bfe6);
+  --metric-lilac-line: light-dark(#dfd8e6, #483b55);
+  --activity-empty: light-dark(#ecece6, #27312c);
+  --activity-low: light-dark(#d8e8e3, #325745);
+  --activity-medium: light-dark(#a3c7bb, #46775f);
+  --activity-high: light-dark(#5b9683, #67a98a);
+  --activity-peak: light-dark(#15473e, #a0d9be);
+
+  --article-green: light-dark(#2f694d, #9dd9bf);
+  --illustration-line: light-dark(#c6ceda, #44534e);
+  --illustration-surface: light-dark(#fbfaf7, #141d19);
+  --toolbar-strip: light-dark(#eae9e4, #202a25);
+  --toolbar-surface: light-dark(#fafaf8, #1a241f);
+  --toolbar-indicator: light-dark(#bcbeb7, #64776c);
+  --address-surface: light-dark(#efeee9, #28342d);
+  --cursor-outline: light-dark(#ffffff, #101915);
+  --studio-overlay: light-dark(rgba(246, 245, 242, 0.85), rgba(17, 24, 21, 0.88));
+  --scene-progress: light-dark(#cbded9, #36584b);
+  --shortcut-surface: light-dark(#f4f4f5, #252d2a);
+  --shortcut-ink: light-dark(#52525b, #d0d9d4);
+  --shortcut-line: light-dark(#d4d4d8, #47554f);
+
+  --card-error-line: light-dark(#edcfca, #6a4341);
+  --timer-progress: light-dark(#a4b7ae, #7db29c);
+  --error-timer-track: light-dark(#eacec9, #694046);
+  --error-timer-progress: light-dark(#cb9f96, #e5918b);
+  --skeleton-start: light-dark(#eceee8, #26332c);
+  --skeleton-end: light-dark(#cdd4cb, #384c41);
+
+  --soft-focus-05: light-dark(rgba(21, 71, 62, 0.05), rgba(135, 199, 173, 0.16));
+  --soft-focus-07: light-dark(rgba(21, 71, 62, 0.07), rgba(135, 199, 173, 0.16));
+  --card-shadow: light-dark(#15473e1a, #0007);
+  --card-shadow-near: light-dark(#15473e0d, #0004);
+  --shadow-green-047: light-dark(rgba(21, 71, 62, 0.047), rgba(0, 0, 0, 0.28));
+  --shadow-green-1: light-dark(rgba(21, 71, 62, 0.1), rgba(0, 0, 0, 0.34));
+  --shadow-green-125: light-dark(rgba(21, 71, 62, 0.125), rgba(0, 0, 0, 0.42));
+  --shadow-green-15: light-dark(rgba(21, 71, 62, 0.15), rgba(0, 0, 0, 0.46));
+  --shadow-neutral-024: light-dark(rgba(37, 39, 35, 0.024), rgba(0, 0, 0, 0.14));
+  --shadow-neutral-125: light-dark(rgba(37, 39, 35, 0.125), rgba(0, 0, 0, 0.42));
+  --shadow-neutral-2: light-dark(rgba(37, 39, 35, 0.2), rgba(0, 0, 0, 0.55));
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --extension-color-scheme: dark;
+  color-scheme: dark;
+}

@@ -1,4 +1,9 @@
 # Changelog
+## [v3.0.1] - 2026-11-18
+### Updated
+- Gemini instructions for summarizations have been updated to increase the upper limit word target and provide more detail.
+- Onboarding text for the "Get Started" page has been lengthened. 
+- Onboarding text for demo articles have been shortened. 
 
 ## [v3.0.0] - 2026-11-17
 

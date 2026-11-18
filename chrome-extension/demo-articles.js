@@ -28,10 +28,6 @@ export const DEMO_ARTICLES = Object.freeze({
       buckets. This costs extra work during the resize, but leaves more space for
       future insertions. Choosing the capacity and collision strategy is therefore
       part of balancing memory use against lookup speed.
-
-      Growing and rehashing the table helps reduce collisions as more
-      entries are added. Poorly distributed keys can still make operations take
-      linear time in the worst case.
     `)
   },
   toronto: {
@@ -53,11 +49,6 @@ export const DEMO_ARTICLES = Object.freeze({
       languages, cultural traditions, and neighbourhoods. Ravines, parks, and
       waterfront spaces form an important part of its landscape, while transport
       links connect the city to the wider region.
-
-      River valleys cut through the urban landscape, creating a network of ravines
-      between built-up neighbourhoods. Along the lake, waterfront spaces provide
-      a different view of the city. Together, these features help explain why
-      Toronto’s geography includes both dense streets and substantial green corridors.
     `)
   }
 });

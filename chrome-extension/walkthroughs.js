@@ -7,8 +7,7 @@ export function createWalkthroughs(onError) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const tracks = new Map();
   let active;
-  const exampleSummary =
-    'Toronto is Canada’s largest city and Ontario’s capital, with diverse neighbourhoods and a culture shaped by immigration.';
+  const exampleSummary = 'Toronto is Ontario’s capital and Canada’s largest city, shaped by immigration. It features iconic landmarks like the CN Tower and hosts the Toronto International Film Festival.';
   const introCard = globalThis.SelectSummaryCard.create({
     container: $('#intro-result'),
     placement: 'embedded',

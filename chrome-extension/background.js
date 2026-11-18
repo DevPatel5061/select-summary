@@ -9,11 +9,12 @@ import {
   publicState,
   normalizeSelection,
   validateSelection,
-  wordCount
+  wordCount,
 } from './core.js';
 import { createStore } from './storage.js';
 import { summarize, validateApiKey } from './gemini.js';
 import { DEMO_ARTICLES } from './demo-articles.js';
+import { readTheme, THEME_KEY } from './shared/theme.js';
 
 const store = createStore(chrome.storage.local);
 const activeTabs = new Set();
@@ -27,18 +28,18 @@ function safeError(error) {
     ? { code: error.code, message: error.message }
     : {
         code: 'STORAGE',
-        message: 'Could not load or save local data. Please try again.'
+        message: 'Could not load or save local data. Please try again.',
       };
 }
 
 async function notice(level, title, message) {
   await chrome.storage.session.set({
-    notice: { id: crypto.randomUUID(), level, title, message }
+    notice: { id: crypto.randomUUID(), level, title, message },
   });
   await chrome.action.setBadgeBackgroundColor({ color: '#15473e' });
   await chrome.action.setBadgeText({
     text:
-      level === 'error' ? '!' : level === 'info' ? '1' : activeCount ? '…' : ''
+      level === 'error' ? '!' : level === 'info' ? '1' : activeCount ? '…' : '',
   });
 }
 
@@ -67,7 +68,8 @@ async function routePractice(type, tab, selection) {
 }
 
 async function showCard(tabId, payload) {
-  const message = { type: 'SELECT_SUMMARY_CARD', ...payload };
+  const theme = await readTheme().catch(() => 'light');
+  const message = { type: 'SELECT_SUMMARY_CARD', ...payload, theme };
   try {
     await chrome.tabs.sendMessage(tabId, message);
     return true;
@@ -77,7 +79,7 @@ async function showCard(tabId, payload) {
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
-      files: ['summary-card.js', 'content.js']
+      files: ['summary-card.js', 'content.js'],
     });
     await chrome.tabs.sendMessage(tabId, message);
     return true;
@@ -85,6 +87,22 @@ async function showCard(tabId, payload) {
     return false;
   }
 }
+
+async function updatePageCards() {
+  const tabs = await chrome.tabs.query({});
+  const theme = await readTheme();
+
+  // Content scripts receive the palette name without access to local storage.
+  await Promise.allSettled(
+    tabs.map(({ id }) =>
+      chrome.tabs.sendMessage(id, { type: 'SELECT_SUMMARY_THEME', theme }),
+    ),
+  );
+}
+
+chrome.storage.local.onChanged.addListener((changes) => {
+  if (changes[THEME_KEY]) void updatePageCards().catch(() => {});
+});
 
 async function handleSelection(selection, tab) {
   if (activeTabs.has(tab?.id)) return;
@@ -97,7 +115,7 @@ async function handleSelection(selection, tab) {
     if (!state.key)
       throw new AppError(
         'NO_KEY',
-        'Open Select Summary and connect your Gemini key.'
+        'Open Select Summary and connect your Gemini key.',
       );
     await notice('loading', 'Summarizing', 'Waiting for Gemini.');
     loadingCard = showCard(tab.id, { kind: 'loading' });
@@ -111,7 +129,7 @@ async function handleSelection(selection, tab) {
         text,
         wordCount(source),
         Date.now(),
-        crypto.randomUUID()
+        crypto.randomUUID(),
       );
     });
     const shown = await showCard(tab.id, { kind: 'summary', text });
@@ -120,14 +138,14 @@ async function handleSelection(selection, tab) {
       shown ? 'Summary ready' : 'Saved to history',
       shown
         ? 'Available in History.'
-        : 'This page cannot display the card. Open History to read it.'
+        : 'This page cannot display the card. Open History to read it.',
     );
   } catch (error) {
     await loadingCard;
     const problem = safeError(error);
     await showCard(tab?.id, { kind: 'error', text: problem.message });
     await notice('error', 'Unable to summarize', problem.message).catch(
-      () => {}
+      () => {},
     );
   } finally {
     activeTabs.delete(tab?.id);
@@ -145,7 +163,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     chrome.contextMenus.create({
       id: 'summarize-selection',
       title: 'Summarize selection',
-      contexts: ['selection']
+      contexts: ['selection'],
     });
   });
   // Reloads and updates must not repeatedly open onboarding tabs.
@@ -177,18 +195,18 @@ chrome.commands.onCommand.addListener(async (command) => {
         ) {
           return element.value.slice(
             element.selectionStart || 0,
-            element.selectionEnd || 0
+            element.selectionEnd || 0,
           );
         }
         return window.getSelection()?.toString() || '';
-      }
+      },
     });
     await handleSelection(result, tab);
   } catch {
     await notice(
       'error',
       'This page is protected',
-      'Select text on a regular webpage. Browser settings and some viewers do not allow access.'
+      'Select text on a regular webpage. Browser settings and some viewers do not allow access.',
     );
     try {
       await chrome.action.openPopup();
@@ -225,7 +243,7 @@ async function welcomeRun(message, sender, requireComplete = false) {
   )
     throw new AppError(
       'SANDBOX',
-      'Summarize some practice text in this walkthrough first.'
+      'Summarize some practice text in this walkthrough first.',
     );
   return { key, run };
 }
@@ -266,7 +284,7 @@ async function summarizeDemo(message, sender) {
         summary,
         wordCount(source),
         Date.now(),
-        message.requestId
+        message.requestId,
       );
       return next;
     });
@@ -274,7 +292,7 @@ async function summarizeDemo(message, sender) {
     await updateWelcomeSession(session.key, (currentRun) =>
       currentRun?.id === session.run.id
         ? { ...currentRun, complete: true }
-        : null
+        : null,
     );
     return { summary };
   } finally {
@@ -295,14 +313,14 @@ async function appRequest(message, sender) {
         throw new AppError('MESSAGE', 'Invalid walkthrough session.');
       await updateWelcomeSession(`welcomeRun:${sender.tab.id}`, () => ({
         id: message.welcomeRunId,
-        complete: false
+        complete: false,
       }));
       return {};
     }
     case 'GET_STATE': {
       const [stored, session] = await Promise.all([
         store.read(),
-        chrome.storage.session.get('notice')
+        chrome.storage.session.get('notice'),
       ]);
       return {
         interfaceVersion: INTERFACE_VERSION,
@@ -310,19 +328,19 @@ async function appRequest(message, sender) {
         notice:
           session.notice?.level === 'loading' && !activeCount
             ? null
-            : session.notice || null
+            : session.notice || null,
       };
     }
     case 'GET_METADATA': {
       const [platform, commands] = await Promise.all([
         chrome.runtime.getPlatformInfo(),
-        chrome.commands.getAll()
+        chrome.commands.getAll(),
       ]);
       return {
         platform: platform.os,
         shortcut:
           commands.find((command) => command.name === 'summarize-selection')
-            ?.shortcut || ''
+            ?.shortcut || '',
       };
     }
     case 'OPEN_WELCOME':
@@ -357,25 +375,25 @@ async function appRequest(message, sender) {
         if (message.consent !== true)
           throw new AppError(
             'CONSENT',
-            'Accept the Google API data notice before connecting.'
+            'Accept the Google API data notice before connecting.',
           );
         if (epoch !== credentialEpoch)
           throw new AppError(
             'CANCELLED',
-            'Settings changed. Please connect again.'
+            'Settings changed. Please connect again.',
           );
         await validateApiKey(key.trim());
         await store.update((state) => {
           if (epoch !== credentialEpoch)
             throw new AppError(
               'CANCELLED',
-              'Settings changed. Please connect again.'
+              'Settings changed. Please connect again.',
             );
           return {
             ...state,
             key: key.trim(),
             keyValidated: true,
-            credentialRevision: state.credentialRevision + 1
+            credentialRevision: state.credentialRevision + 1,
           };
         });
         return {};
@@ -392,7 +410,7 @@ async function appRequest(message, sender) {
           throw new AppError('NO_KEY', 'Verify your Gemini key first.');
         return {
           ...state,
-          onboarding: { completed: true }
+          onboarding: { completed: true },
         };
       });
       return {};
@@ -402,7 +420,7 @@ async function appRequest(message, sender) {
       if (!state.keyValidated || !state.onboarding.completed)
         throw new AppError(
           'NO_KEY',
-          'Finish setup before opening Select Summary.'
+          'Finish setup before opening Select Summary.',
         );
       // Open against another active tab so removing the inactive guide does not
       // dismiss the popup. Keep the guide available if opening fails.
@@ -413,7 +431,7 @@ async function appRequest(message, sender) {
         // Closing a window's only tab would also destroy its toolbar popup.
         target = await chrome.tabs.create({
           windowId: sender.tab.windowId,
-          active: false
+          active: false,
         });
       }
       try {
@@ -424,7 +442,7 @@ async function appRequest(message, sender) {
         if (needsNewTab) await chrome.tabs.remove(target.id);
         throw new AppError(
           'POPUP',
-          'Your browser could not open the popup. Open Select Summary from your browser’s Extensions menu.'
+          'Your browser could not open the popup. Open Select Summary from your browser’s Extensions menu.',
         );
       }
       await chrome.tabs.remove(sender.tab.id);
@@ -434,12 +452,12 @@ async function appRequest(message, sender) {
       if (!HISTORY_LIMITS.includes(message.limit))
         throw new AppError(
           'MESSAGE',
-          'Choose a history limit of 5, 10, 15, or 20.'
+          'Choose a history limit of 5, 10, 15, or 20.',
         );
       await store.update((state) => ({
         ...state,
         historyLimit: message.limit,
-        history: state.history.slice(0, message.limit)
+        history: state.history.slice(0, message.limit),
       }));
       return {};
     case 'CLEAR_HISTORY':
@@ -452,15 +470,16 @@ async function appRequest(message, sender) {
         key: null,
         keyValidated: false,
         credentialRevision: state.credentialRevision + 1,
-        onboarding: { completed: false }
+        onboarding: { completed: false },
       }));
       return {};
     case 'RESET_ALL':
       credentialEpoch++;
       await store.update((state) => ({
         ...initialState(),
-        credentialRevision: state.credentialRevision + 1
+        credentialRevision: state.credentialRevision + 1,
       }));
+      await chrome.storage.local.remove(THEME_KEY);
       await chrome.storage.session.remove('notice');
       await chrome.action.setBadgeText({ text: '' });
       return {};
@@ -474,7 +493,7 @@ async function appRequest(message, sender) {
     default:
       throw new AppError(
         'UPDATE_REQUIRED',
-        'Reload Select Summary at chrome://extensions, then reopen the welcome guide.'
+        'Reload Select Summary at chrome://extensions, then reopen the welcome guide.',
       );
   }
 }
@@ -488,7 +507,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     return false;
   appRequest(message, sender).then(
     (result) => respond({ ok: true, ...result }),
-    (error) => respond({ ok: false, error: safeError(error) })
+    (error) => respond({ ok: false, error: safeError(error) }),
   );
   return true;
 });

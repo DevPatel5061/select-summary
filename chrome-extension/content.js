@@ -6,12 +6,18 @@
   let dismissedWhileLoading = false;
 
   chrome.runtime.onMessage.addListener((message, sender) => {
-    if (
-      sender.id !== chrome.runtime.id ||
-      sender.tab ||
-      message?.type !== 'SELECT_SUMMARY_CARD'
-    )
+    if (sender.id !== chrome.runtime.id || sender.tab) return;
+
+    if (message?.type === 'SELECT_SUMMARY_THEME') {
+      if (card) {
+        card.host.dataset.theme = message.theme === 'dark' ? 'dark' : 'light';
+      }
+
       return;
+    }
+
+    if (message?.type !== 'SELECT_SUMMARY_CARD') return;
+
     if (
       !['summary', 'loading', 'error'].includes(message.kind) ||
       (message.kind !== 'loading' && typeof message.text !== 'string')
@@ -26,6 +32,7 @@
         }
       });
     }
+    card.host.dataset.theme = message.theme === 'dark' ? 'dark' : 'light';
     card.update(message);
   });
 })();

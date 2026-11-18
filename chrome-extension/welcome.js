@@ -5,9 +5,10 @@ import { decorateButtons } from './icons.js';
 import { shortcutKeys, matchesShortcut } from './shortcuts.js';
 import { createArticleDemo } from './article-demo.js';
 import { createWalkthroughs } from './walkthroughs.js';
+import { initializeTheme } from './shared/theme-page.js';
 
 const $ = (selector) => document.querySelector(selector);
-const guideTab = await chrome.tabs.getCurrent();
+const [guideTab] = await Promise.all([chrome.tabs.getCurrent(), initializeTheme()]);
 let state;
 const welcomeRunId = crypto.randomUUID();
 let practiceComplete = false;

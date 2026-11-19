@@ -196,12 +196,15 @@ export function publicState(state) {
 // Headlines reflect actual activity; detailed counters are shown in the metrics.
 export function dashboardHeadline(stats) {
   if (!stats.total) return 'Ready for your first summary?';
-  if (stats.today > 0 && stats.today === stats.bestDay && stats.bestDay > 1)
+  if (stats.today > 1 && stats.today === stats.bestDay) {
     return 'Your best day so far.';
-  if (stats.currentStreak >= 2) return `${stats.currentStreak} days in a row.`;
-  if (stats.today)
-    return `${stats.today} ${stats.today === 1 ? 'summary' : 'summaries'} today.`;
-  return 'Welcome back.';
+  }
+  if (!stats.today) return 'Ready to summarize something today?';
+  if (stats.today === 1) return 'A great start. Keep going.';
+  if (stats.today < 5) return 'Keep the momentum going.';
+  if (stats.today < 10) return 'You’re making great progress.';
+
+  return 'Impressive work today.';
 }
 
 // Only our top-level UI documents may manage credentials or local history.

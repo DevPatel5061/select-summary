@@ -5,10 +5,16 @@
 ## [v3.1.0] - 2026-11-18
 
 ### Added
-- Dark mode, togglable through the extension popup 
+- Dark mode, togglable through the extension popup. 
+
+### Changed
+- Bigger metric value descriptions with icons.
+- Dynamic headline for the number of summarizes.
 
 ### Fixed 
-- Summary card now shows proper dark theme
+- Summary card now shows proper dark theme.
+- Daily activity tooltip no longer cuts off on the far right.
+- The days of the weeks text are aligned with their respective rows.
 
 ## [v3.0.1] - 2026-11-18
 

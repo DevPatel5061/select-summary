@@ -102,10 +102,12 @@ function showActivityTooltip(cell, date, count) {
   tooltip.hidden = false;
   const cellBounds = cell.getBoundingClientRect();
   const bounds = tooltip.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = document.documentElement.clientHeight;
   const left = Math.max(
     8,
     Math.min(
-      innerWidth - bounds.width - 8,
+      viewportWidth - bounds.width - 8,
       cellBounds.left + (cellBounds.width - bounds.width) / 2
     )
   );
@@ -113,7 +115,7 @@ function showActivityTooltip(cell, date, count) {
   const top =
     above >= 8
       ? above
-      : Math.min(innerHeight - bounds.height - 8, cellBounds.bottom + 9);
+      : Math.min(viewportHeight - bounds.height - 8, cellBounds.bottom + 9);
   tooltip.style.left = `${left}px`;
   tooltip.style.top = `${Math.max(8, top)}px`;
 }
@@ -219,8 +221,9 @@ function renderDashboard() {
     activitySignature = nextActivity;
     renderedDay = dayKey();
     const stats = activityStats(state.activity);
-    $('#stat-total').textContent = stats.total.toLocaleString();
-    $('#stat-today').textContent = `${stats.today} today`;
+    $('#stat-total').textContent = stats.today.toLocaleString();
+    $('#stat-today').textContent =
+      stats.today === 1 ? 'Text summarized today' : 'Texts summarized today';
     $('#stat-time').textContent = timeLabel(stats.secondsSaved);
     $('#stat-streak').replaceChildren(
       document.createTextNode(String(stats.currentStreak)),
@@ -375,6 +378,19 @@ const isToolbarPopup = chrome.extension
   .getViews({ type: 'popup' })
   .includes(window);
 decorateButtons();
+
+for (const [selector, name] of [
+  ['.metric-summaries .metric-label', 'summary'],
+  ['.metric-time .metric-label', 'clock'],
+  ['.metric-streak .metric-label', 'streak'],
+  ['.metric-best .metric-label', 'trophy']
+]) {
+  const metricIcon = icon(name);
+
+  metricIcon.classList.add('metric-icon');
+  $(selector).prepend(metricIcon);
+}
+
 bindThemeToggle($('.theme-toggle'), showProblem);
 document.body.classList.toggle('window-mode', !isToolbarPopup);
 document

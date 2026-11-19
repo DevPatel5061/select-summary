@@ -187,11 +187,20 @@ main > section {
   gap: 8px;
 }
 .day-labels {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
   color: var(--muted);
-  padding: 17px 0px 11px;
+}
+.day-monday {
+  grid-row: 2;
+}
+.day-wednesday {
+  grid-row: 4;
+}
+.day-friday {
+  grid-row: 6;
 }
 .heatmap {
   display: grid;
@@ -610,8 +619,13 @@ main {
   border: 1px solid transparent;
 }
 .metric-label {
-  font-size: 11px;
-  font-weight: 550;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 600;
+  white-space: nowrap;
   margin-bottom: 12px;
 }
 .metric strong {
@@ -619,9 +633,17 @@ main {
   font-weight: 550;
   letter-spacing: -1px;
 }
+.metric-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: inherit;
+}
+
 .metric strong > span {
   font-size: 13px;
-  margin-left: 3px;
+  margin-left: 0;
   color: inherit;
   opacity: 0.8;
 }

@@ -1,6 +1,27 @@
-@import url("theme.css");
-
 :host {
+  /* The card must carry its palette when a page blocks imported stylesheets. */
+  --surface: light-dark(#ffffff, #171f1c);
+  --ink: light-dark(#252723, #e7eee8);
+  --body-ink: light-dark(#40483f, #c6d3ca);
+  --muted: light-dark(#686a63, #a8b8ae);
+  --line: light-dark(#e5e3dc, #34443c);
+  --focus: light-dark(#8cafa6, #87c7ad);
+  --accent: light-dark(#15473e, #9dd9bf);
+  --accent-soft: light-dark(#e6f0ee, #20382f);
+  --accent-fill: light-dark(#15473e, #9dd9bf);
+  --accent-fill-hover: light-dark(#0f352e, #b3e5ce);
+  --on-accent: light-dark(#ffffff, #11281e);
+  --danger-ink: light-dark(#a93d3d, #ffaaa1);
+  --danger-surface: light-dark(#fff0ee, #341f20);
+  --card-error-line: light-dark(#edcfca, #6a4341);
+  --timer-progress: light-dark(#a4b7ae, #7db29c);
+  --error-timer-track: light-dark(#eacec9, #694046);
+  --error-timer-progress: light-dark(#cb9f96, #e5918b);
+  --skeleton-start: light-dark(#eceee8, #26332c);
+  --skeleton-end: light-dark(#cdd4cb, #384c41);
+  --card-shadow: light-dark(#15473e1a, #0007);
+  --card-shadow-near: light-dark(#15473e0d, #0004);
+
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   color: var(--ink);

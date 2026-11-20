@@ -36,7 +36,7 @@ cd select-summary
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and select the **`chrome-extension`** folder.
 4. In the welcome guide, connect your Gemini API key and summarize some practice text to complete setup.
-5. On a webpage, select text, right-click and choose **Summarize selection**. You can also press **Option + Shift + S** (Alt + Shift + S on Windows).
+5. On a webpage, select text, right-click and choose **Summarize selection**. You can also press **⌥ + ⇧ + S** (Alt + ⇧ + S).
 6. Click the extension icon to view activity, saved history and settings.
 
 ## Project Structure
